@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Zambia Blood Donor</title>
-<meta name="description" content="Independent prototype: find a blood centre in Zambia and get reminded when you can donate again. English, Icibemba, Chinyanja.">
+<meta name="description" content="Independent prototype for a ZNBTS pilot: donor card, blood centre map and reminders for whole blood, platelets and plasma. English, Icibemba, Chinyanja.">
 <meta name="theme-color" content="#B0142F">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -681,7 +681,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 </style>
 <style>
-/* Layout: an app shell. Sticky top bar with a language switch, one view at a time, tab bar along the bottom on phones and in the top bar on desktop. The map and the centre list sit side by side on wide screens. */
+/* Layout: an app shell. First visit opens a sign-up form; after that a donor card holds profile, history and the next date. Sticky top bar with a language switch, one view at a time, tab bar along the bottom on phones and in the top bar on desktop. The map and the centre list sit side by side on wide screens. */
 :root {
   --bg: #F9F6F6;
   --surface: #FFFFFF;
@@ -696,6 +696,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
   --ok: #17703F;
   --ok-soft: #DFF0E5;
   --copper: #A85A22;
+  --copper-soft: #F6E7DA;
+  --plasma: #876400;
+  --plasma-soft: #F6EDCB;
   --mask: #F9F6F6;
   --shadow: 0 1px 2px rgba(60, 20, 28, .06), 0 8px 24px rgba(60, 20, 28, .07);
 
@@ -720,7 +723,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   :root:not([data-theme="light"]) {
     --bg: #141011; --surface: #1C1618; --sunk: #261E21; --ink: #F4EDEE; --muted: #B6A6A9; --line: #392D30;
     --accent: #C9233F; --accent-text: #FF8899; --on-accent: #FFFFFF; --accent-soft: #3B1820;
-    --ok: #6FD49A; --ok-soft: #173826; --copper: #E39E64; --mask: #141011;
+    --ok: #6FD49A; --ok-soft: #173826; --copper: #E39E64; --copper-soft: #3A2516; --plasma: #E6C35C; --plasma-soft: #352B10; --mask: #141011;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
     color-scheme: dark;
   }
@@ -728,7 +731,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 :root[data-theme="dark"] {
   --bg: #141011; --surface: #1C1618; --sunk: #261E21; --ink: #F4EDEE; --muted: #B6A6A9; --line: #392D30;
   --accent: #C9233F; --accent-text: #FF8899; --on-accent: #FFFFFF; --accent-soft: #3B1820;
-  --ok: #6FD49A; --ok-soft: #173826; --copper: #E39E64; --mask: #141011;
+  --ok: #6FD49A; --ok-soft: #173826; --copper: #E39E64; --copper-soft: #3A2516; --plasma: #E6C35C; --plasma-soft: #352B10; --mask: #141011;
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
   color-scheme: dark;
 }
@@ -1088,6 +1091,79 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Sign-up / profile ---------- */
+.welcome { max-width: 760px; }
+.welcome-head { display: grid; gap: 8px; }
+.welcome-head p { color: var(--muted); max-width: 60ch; }
+.profile-form { gap: 0; padding: 0; }
+.form-section { display: grid; gap: 12px; padding: 20px; border-top: 1px solid var(--line); min-width: 0; }
+.form-section:first-child { border-top: 0; }
+.form-section h2 { font-size: var(--step-1); font-stretch: 100%; }
+.form-actions { display: grid; gap: 12px; padding: 0 20px 20px; }
+.hint { font-weight: 500; color: var(--muted); font-size: .85rem; }
+.fs { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 8px; }
+.fs legend { padding: 0; margin-bottom: 8px; font-weight: 600; font-size: .9rem; }
+.checks { display: grid; gap: 8px; }
+@media (min-width: 560px) { .checks { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.check {
+  display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; min-width: 0;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--bg); cursor: pointer; font-weight: 650;
+}
+.check input { width: 20px; height: 20px; margin: 2px 0 0; flex: none; accent-color: var(--accent); }
+.check > span { min-width: 0; }
+.check small { display: block; font-weight: 500; color: var(--muted); font-size: .82rem; line-height: 1.35; margin-top: 2px; }
+.check.on { border-color: var(--accent-text); background: var(--accent-soft); }
+.check.locked { cursor: default; }
+.check.consent { font-weight: 500; font-size: .92rem; line-height: 1.45; }
+.pilot-note { background: var(--sunk); border-radius: var(--radius-sm); padding: 10px 12px; font-size: .86rem; color: var(--muted); }
+.err { color: var(--accent-text); font-weight: 650; font-size: .9rem; }
+
+/* ---------- Donor card ---------- */
+.profile { display: flex; gap: 16px; align-items: center; min-width: 0; }
+.profile-body { display: grid; gap: 6px; min-width: 0; }
+.profile-body h2 { font-size: var(--step-2); overflow-wrap: anywhere; }
+.profile-meta { color: var(--muted); font-size: .92rem; overflow-wrap: anywhere; }
+.bg-badge { width: 60px; height: auto; flex: none; }
+.bg-badge path { fill: var(--accent); }
+.bg-badge text { fill: var(--on-accent); font-family: var(--font-display); font-weight: 900; font-stretch: 112%; }
+.bg-badge.empty path { fill: var(--sunk); stroke: var(--line); stroke-width: 2; }
+.bg-badge.empty text { fill: var(--muted); }
+.type-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.tchip { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: .76rem; font-weight: 750; white-space: nowrap; }
+.tchip.whole { background: var(--accent-soft); color: var(--accent-text); }
+.tchip.platelets { background: var(--copper-soft); color: var(--copper); }
+.tchip.plasma { background: var(--plasma-soft); color: var(--plasma); }
+.sex-note { color: var(--copper); font-weight: 600; }
+.type-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.type-stats .stat { padding: 10px; }
+.type-stats .stat b { font-size: 1.5rem; }
+.type-stats .stat span { font-size: .75rem; line-height: 1.25; overflow-wrap: anywhere; }
+.history .h-mid { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; min-width: 0; }
+.log-type { justify-self: start; }
+
+/* ---------- Home additions ---------- */
+.nudge { border-color: var(--accent-text); }
+.invite { display: grid; gap: 14px; }
+@media (min-width: 760px) { .invite { grid-template-columns: minmax(0, 1fr) auto; align-items: center; } }
+.invite-copy { display: grid; gap: 6px; min-width: 0; }
+.invite-copy p { max-width: 56ch; }
+
+/* ---------- Ways to donate ---------- */
+.ways { display: grid; gap: 16px; }
+@media (min-width: 900px) { .ways { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.way h3 { display: flex; align-items: center; gap: 10px; font-size: var(--step-1); }
+.way .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.way.whole .dot { background: var(--accent); }
+.way.platelets .dot { background: var(--copper); }
+.way.plasma .dot { background: var(--plasma); }
+.way > p { color: var(--muted); }
+.facts { margin: 0; display: grid; gap: 10px; }
+.facts div { display: grid; grid-template-columns: 6.5rem minmax(0, 1fr); gap: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.facts dt { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding-top: 2px; }
+.facts dd { margin: 0; font-size: .93rem; }
+.ways-note { color: var(--muted); font-size: .88rem; }
+
 </style>
 <script>
 /* @preserve
@@ -1113,7 +1189,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     <nav class="tabs" aria-label="Main">
       <a href="#home" data-view="home" data-i18n="nav_home">Home</a>
       <a href="#find" data-view="find" data-i18n="nav_find">Find a centre</a>
-      <a href="#remind" data-view="remind" data-i18n="nav_remind">My reminder</a>
+      <a href="#remind" data-view="remind" data-i18n="nav_remind">Donor card</a>
       <a href="#info" data-view="info" data-i18n="nav_info">Before you donate</a>
     </nav>
     <div class="lang">
@@ -1144,6 +1220,72 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 
 <main id="main">
 
+  <!-- SIGN-UP / PROFILE -->
+  <section class="view welcome" id="view-welcome" hidden aria-labelledby="w-title">
+    <div class="welcome-head">
+      <p class="eyebrow" id="w-eyebrow" data-i18n="welcome_eyebrow">Welcome</p>
+      <h1 id="w-title" data-i18n="welcome_title">Set up your donor card</h1>
+      <p id="w-intro" data-i18n="welcome_intro">Tell us a little about you so we can work out when you can give again and remind you.</p>
+    </div>
+    <form class="panel profile-form" id="profile-form" novalidate>
+      <div class="form-section">
+        <h2 data-i18n="f_about">About you</h2>
+        <div class="form-grid">
+          <label class="field full" for="p-name"><span><span data-i18n="f_name">Your name</span> <small class="hint" data-i18n="f_optional">Optional</small></span>
+            <input class="input" id="p-name" type="text" autocomplete="name" maxlength="80">
+          </label>
+          <label class="field" for="p-phone"><span data-i18n="f_phone">Phone number</span>
+            <input class="input" id="p-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="097 123 4567">
+          </label>
+          <label class="field" for="p-email"><span data-i18n="f_email">Email address</span>
+            <input class="input" id="p-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="name@example.com">
+          </label>
+        </div>
+        <fieldset class="fs">
+          <legend data-i18n="f_sex">Sex</legend>
+          <div class="segmented">
+            <label><input type="radio" name="sex" id="sex-m" value="m"><span data-i18n="sex_m">Male</span></label>
+            <label><input type="radio" name="sex" id="sex-f" value="f"><span data-i18n="sex_f">Female</span></label>
+          </div>
+          <p class="hint" id="sex-hint">Men can give whole blood every 3 months and women every 4 months, so this sets your reminder.</p>
+        </fieldset>
+        <div class="field" role="group" aria-labelledby="bg-label">
+          <span id="bg-label" data-i18n="f_bg">Blood group</span>
+          <div class="blood-types" id="p-bg"></div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 data-i18n="f_types">How do you donate?</h2>
+        <p class="hint" data-i18n="f_types_hint">Choose all that apply. You can change this later.</p>
+        <div class="checks">
+          <label class="check" for="pt-whole"><input type="checkbox" id="pt-whole"><span><span data-i18n="type_whole">Whole blood</span><small id="pt-whole-rule">Men every 3 months, women every 4 months</small></span></label>
+          <label class="check" for="pt-platelets"><input type="checkbox" id="pt-platelets"><span><span data-i18n="type_platelets">Platelets</span><small id="pt-platelets-rule">Every 2 weeks</small></span></label>
+          <label class="check" for="pt-plasma"><input type="checkbox" id="pt-plasma"><span><span data-i18n="type_plasma">Plasma</span><small id="pt-plasma-rule">Every 2 weeks</small></span></label>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <h2 data-i18n="f_channels">How should we remind you?</h2>
+        <div class="checks">
+          <label class="check on locked" for="ch-app"><input type="checkbox" id="ch-app" checked disabled><span><span data-i18n="ch_app">In this app</span><small data-i18n="ch_app_hint">Always on</small></span></label>
+          <label class="check" for="ch-sms"><input type="checkbox" id="ch-sms"><span><span data-i18n="ch_sms">SMS</span><small data-i18n="ch_sms_hint">To your phone</small></span></label>
+          <label class="check" for="ch-email"><input type="checkbox" id="ch-email"><span><span data-i18n="ch_email">Email</span><small data-i18n="ch_email_hint">To your inbox</small></span></label>
+        </div>
+        <label class="check consent" for="p-consent"><input type="checkbox" id="p-consent"><span data-i18n="f_consent">I agree that ZNBTS may send me reminders and blood drive news by SMS or email. I can stop at any time.</span></label>
+        <p class="pilot-note" data-i18n="pilot_note">SMS and email reminders start when the ZNBTS pilot launches. Until then, your details stay on this phone only.</p>
+      </div>
+
+      <div class="form-actions">
+        <p class="err" id="p-error" role="alert" hidden></p>
+        <div class="btn-row">
+          <button class="btn btn-primary" type="submit" id="p-save">Save and continue</button>
+          <button class="btn btn-quiet" type="button" id="p-skip">Skip for now</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
   <!-- HOME -->
   <section class="view" id="view-home" aria-labelledby="st-title">
     <div class="banner" id="ready-banner" hidden>
@@ -1156,7 +1298,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
         <div class="status-copy">
           <p class="eyebrow" id="st-eyebrow">Your next donation</p>
           <h1 id="st-title">Ready when you are</h1>
-          <p class="lead" id="st-lead">Give blood, log it here, and we&#x27;ll remind you every 6 months. If you donate today, your next reminder is six months from today.</p>
+          <p class="lead" id="st-lead">Give blood, log it on your donor card, and we'll remind you when you can give again.</p>
           <div class="btn-row" id="st-actions"></div>
         </div>
         <figure class="bag" aria-hidden="true">
@@ -1183,6 +1325,13 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       </div>
 
       <div class="side">
+        <div class="panel nudge" id="home-nudge" hidden>
+          <p class="eyebrow" data-i18n="nav_remind">Donor card</p>
+          <p class="near-name" data-i18n="welcome_title">Set up your donor card</p>
+          <p class="near-meta" data-i18n="nudge_text">Add your details and how you donate so your reminder uses the right waiting time.</p>
+          <div class="btn-row"><a class="btn btn-sm btn-primary" href="#welcome" data-i18n="btn_add_details">Add my details</a></div>
+        </div>
+
         <div class="panel near-card">
           <div class="panel-head"><p class="eyebrow" data-i18n="eyebrow_nearest">Nearest centre</p><span class="chip" id="near-dist" hidden></span></div>
           <div id="near-body"><p class="near-name">Find the blood centre closest to you</p><p class="near-meta">There is a ZNBTS centre in every province.</p></div>
@@ -1200,6 +1349,23 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
             <div><b>3</b><span data-i18n="fact_three">patients it can help, at most</span></div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="panel invite">
+      <div class="invite-copy">
+        <h2 data-i18n="invite_title">Bring a friend</h2>
+        <p class="muted" data-i18n="invite_text">One donation can help up to three patients. Ask a friend to come with you next time.</p>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-primary" id="wa-btn" href="https://wa.me/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5z"/></svg>
+          <span data-i18n="btn_whatsapp">Share on WhatsApp</span>
+        </a>
+        <button class="btn" type="button" id="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+          <span data-i18n="btn_copy">Copy link</span>
+        </button>
       </div>
     </div>
 
@@ -1268,27 +1434,29 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     </div>
   </section>
 
-  <!-- REMINDER -->
+  <!-- DONOR CARD -->
   <section class="view" id="view-remind" hidden aria-labelledby="remind-title">
     <div class="find-head">
-      <h1 id="remind-title" data-i18n="remind_title">My reminder</h1>
-      <p data-i18n="remind_intro">Log each donation and the app works out when you can give again. Add the reminder to your phone's calendar so it reaches you even when this app is closed.</p>
+      <h1 id="remind-title" data-i18n="remind_title">My donor card</h1>
+      <p data-i18n="remind_intro">Your details, your donations and your next date to give.</p>
     </div>
 
     <div class="remind-grid">
       <div class="panel">
-        <p class="eyebrow" data-i18n="eyebrow_next_reminder">Next reminder</p>
+        <div class="profile" id="profile-box"></div>
+        <p class="list-note" id="profile-nudge" data-i18n="card_no_profile" hidden>Add your details so we can set the right reminder for you.</p>
+        <p class="small sex-note" id="sex-note" hidden></p>
+        <p class="small muted" id="profile-reminders"></p>
+        <div class="btn-row"><a class="btn btn-sm" href="#welcome" id="profile-btn">Edit profile</a></div>
+      </div>
+
+      <div class="panel">
+        <p class="eyebrow" data-i18n="eyebrow_next_reminder">Next donation</p>
         <div>
           <p class="next-date" id="next-date"></p>
           <p class="next-rel" id="next-rel"></p>
         </div>
-        <fieldset class="segmented" id="interval">
-          <legend data-i18n="interval_legend">Remind me every</legend>
-          <label><input type="radio" name="interval" id="int-6" value="6" checked><span data-i18n="int_6">6 months</span></label>
-          <label><input type="radio" name="interval" id="int-4" value="4"><span data-i18n="int_4">4 months</span></label>
-          <label><input type="radio" name="interval" id="int-3" value="3"><span data-i18n="int_3">3 months</span></label>
-        </fieldset>
-        <p class="small muted" data-i18n="interval_help">Six months is a comfortable gap between whole blood donations. Many blood services allow 3 months for men and 4 for women, so ask your centre what applies to you.</p>
+        <p class="small muted" id="next-basis" hidden></p>
         <div class="btn-row">
           <button class="btn btn-primary" id="ics-btn" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
@@ -1306,6 +1474,14 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       <div class="panel">
         <p class="eyebrow" data-i18n="eyebrow_log">Log a donation</p>
         <form class="form-grid" id="log-form" novalidate>
+          <fieldset class="fs full">
+            <legend data-i18n="label_type">Type of donation</legend>
+            <div class="segmented log-type" id="log-type">
+              <label><input type="radio" name="log-type" id="lt-whole" value="whole" checked><span data-i18n="type_whole">Whole blood</span></label>
+              <label><input type="radio" name="log-type" id="lt-platelets" value="platelets"><span data-i18n="type_platelets">Platelets</span></label>
+              <label><input type="radio" name="log-type" id="lt-plasma" value="plasma"><span data-i18n="type_plasma">Plasma</span></label>
+            </div>
+          </fieldset>
           <label class="field" for="log-date"><span data-i18n="label_date">Date you donated</span>
             <input class="input" type="date" id="log-date" required>
           </label>
@@ -1316,24 +1492,13 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
             <button class="btn btn-primary" type="submit" data-i18n="btn_save">Save donation</button>
             <button class="btn btn-quiet" type="button" id="today-btn" data-i18n="btn_today">I donated today</button>
           </div>
-          <p class="full small" id="log-error" role="alert" hidden></p>
+          <p class="full err" id="log-error" role="alert" hidden></p>
         </form>
       </div>
 
       <div class="panel">
-        <p class="eyebrow" data-i18n="eyebrow_card">My donor card</p>
-        <div class="stats">
-          <div class="stat"><b id="stat-count">0</b><span data-i18n="stat_count">donations logged</span></div>
-          <div class="stat"><b id="stat-helped">0</b><span data-i18n="stat_helped">patients helped, up to</span></div>
-        </div>
-        <div class="field" role="group" aria-labelledby="bt-label">
-          <span id="bt-label" data-i18n="blood_group">Blood group</span>
-          <div class="blood-types" id="blood-types"></div>
-        </div>
-      </div>
-
-      <div class="panel">
         <div class="panel-head"><p class="eyebrow" data-i18n="eyebrow_history">History</p><span class="small muted" data-i18n="device_only">Saved on this device only</span></div>
+        <div class="type-stats" id="type-stats"></div>
         <ul class="history" id="history"></ul>
         <div class="danger-zone">
           <span class="small muted" data-i18n="switching">Switching phones? Your history stays in this browser.</span>
@@ -1349,6 +1514,39 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       <h1 id="info-title" data-i18n="info_title">Before you donate</h1>
       <p data-i18n="info_intro">Giving blood takes about an hour, and the needle part only around ten minutes. Here is what to expect. The team at the centre checks every donor and makes the final decision.</p>
     </div>
+
+    <h2 data-i18n="ways_title">Ways to donate</h2>
+    <div class="ways">
+      <article class="panel way whole">
+        <h3><span class="dot"></span><span data-i18n="type_whole">Whole blood</span></h3>
+        <p data-i18n="whole_what">The most common donation. About 450 ml of blood is collected.</p>
+        <dl class="facts">
+          <div><dt data-i18n="way_often">How often</dt><dd id="often-whole">Men every 3 months, women every 4 months</dd></div>
+          <div><dt data-i18n="way_time">Takes</dt><dd data-i18n="whole_time">About 10 minutes with the needle</dd></div>
+          <div><dt data-i18n="way_helps">Helps</dt><dd data-i18n="whole_helps">Mothers who bleed in childbirth, children with severe anaemia, and accident and surgery patients.</dd></div>
+        </dl>
+      </article>
+      <article class="panel way platelets">
+        <h3><span class="dot"></span><span data-i18n="type_platelets">Platelets</span></h3>
+        <p data-i18n="plt_what">A machine collects only your platelets and returns the rest of your blood to you. This is called apheresis.</p>
+        <dl class="facts">
+          <div><dt data-i18n="way_often">How often</dt><dd id="often-platelets">Every 2 weeks</dd></div>
+          <div><dt data-i18n="way_time">Takes</dt><dd data-i18n="plt_time">1 to 2 hours</dd></div>
+          <div><dt data-i18n="way_helps">Helps</dt><dd data-i18n="plt_helps">Platelets help blood to clot. They are used for patients with cancer, leukaemia and severe bleeding.</dd></div>
+        </dl>
+      </article>
+      <article class="panel way plasma">
+        <h3><span class="dot"></span><span data-i18n="type_plasma">Plasma</span></h3>
+        <p data-i18n="pls_what">Plasma is the liquid part of your blood. It is also collected by apheresis.</p>
+        <dl class="facts">
+          <div><dt data-i18n="way_often">How often</dt><dd id="often-plasma">Every 2 weeks</dd></div>
+          <div><dt data-i18n="way_time">Takes</dt><dd data-i18n="pls_time">About 1 hour</dd></div>
+          <div><dt data-i18n="way_helps">Helps</dt><dd data-i18n="pls_helps">Patients with severe burns, heavy bleeding, and liver or clotting problems.</dd></div>
+        </dl>
+      </article>
+    </div>
+    <p class="ways-note" data-i18n="ways_note">Platelet and plasma donation may only be available at some centres. Ask your nearest centre.</p>
+
     <div class="info-grid">
       <div class="panel">
         <h2 data-i18n="info_who_h">Who can usually give</h2>
@@ -1360,25 +1558,25 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       <div class="panel">
         <h2 data-i18n="info_before_h">Before you go</h2>
         <ul class="ticks">
-          <li data-i18n="b1">Eat a proper meal in the 3 to 4 hours before</li><li data-i18n="b2">Drink plenty of water</li><li data-i18n="b3">Avoid alcohol the day before</li><li data-i18n="b4">Carry your NRC or another photo ID</li><li data-i18n="b5">Wear a top with sleeves that roll up easily</li>
+          <li data-i18n="b1">Eat a proper meal in the 3 to 4 hours before</li><li data-i18n="b6">In the days before, eat iron-rich food such as beans, kapenta, eggs, meat and dark green vegetables like rape or pumpkin leaves</li><li data-i18n="b2">Drink plenty of water</li><li data-i18n="b3">Avoid alcohol the day before</li><li data-i18n="b4">Carry your NRC or another photo ID</li><li data-i18n="b5">Wear a top with sleeves that roll up easily</li>
         </ul>
       </div>
       <div class="panel">
         <h2 data-i18n="info_after_h">After you donate</h2>
         <ul class="ticks">
-          <li data-i18n="a1">Rest for 10 to 15 minutes and take the drink and snack offered</li><li data-i18n="a2">Drink extra fluids for the next 24 hours</li><li data-i18n="a3">Skip heavy lifting and hard exercise for the rest of the day</li><li data-i18n="a4">If you feel faint, sit or lie down with your feet raised</li><li data-i18n="a5">Log the donation here so your reminder stays accurate</li>
+          <li data-i18n="a1">Rest for 10 to 15 minutes and take the drink and snack offered</li><li data-i18n="a2">Drink extra fluids for the next 24 hours</li><li data-i18n="a3">Skip heavy lifting and hard exercise for the rest of the day</li><li data-i18n="a4">If you feel faint, sit or lie down with your feet raised</li><li data-i18n="a5">Log the donation on your donor card so your reminder stays accurate</li>
         </ul>
       </div>
       <div class="panel">
         <h2 data-i18n="info_ask_h">Check with the team first if you</h2>
         <ul class="ticks ask">
-          <li data-i18n="k1">Have a fever, cough or feel unwell</li><li data-i18n="k2">Have had malaria recently</li><li data-i18n="k3">Are pregnant or have recently given birth</li><li data-i18n="k4">Had a tattoo, piercing, surgery or a transfusion recently</li><li data-i18n="k5">Take regular medication</li>
+          <li data-i18n="k1">Have a fever, cough or feel unwell</li><li data-i18n="k2">Have had malaria recently</li><li data-i18n="k6">Have had a vaccination recently</li><li data-i18n="k3">Are pregnant or have recently given birth</li><li data-i18n="k4">Had a tattoo, piercing, surgery or a transfusion recently</li><li data-i18n="k5">Take regular medication</li>
         </ul>
       </div>
     </div>
     <div class="panel about">
       <h3 data-i18n="about_h">About this app</h3>
-      <p data-i18n="about_p">This is an independent prototype of a blood donor app. It is not made by, endorsed by or connected to the Zambia National Blood Transfusion Service (ZNBTS). The map shows the towns where ZNBTS runs provincial blood centres. Confirm exact addresses, phone numbers and opening hours with ZNBTS before you travel. Your donation history and reminder settings are stored only in this browser and are never sent anywhere.</p>
+      <p data-i18n="about_p">This is an independent prototype of a blood donor app, prepared for a pilot with the Zambia National Blood Transfusion Service (ZNBTS). It is not yet an official ZNBTS app. The donation rules and health information come from public sources and must be confirmed by ZNBTS before release. The map shows the towns where ZNBTS runs provincial blood centres. Your profile, donations and settings are stored only on this device and are never sent anywhere.</p>
     </div>
   </section>
 </main>
@@ -1393,8 +1591,8 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     <span data-i18n="tab_find">Find</span>
   </a>
   <a href="#remind" data-view="remind">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>
-    <span data-i18n="tab_remind">Reminder</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4M14 13.5h3"/></svg>
+    <span data-i18n="tab_remind">Card</span>
   </a>
   <a href="#info" data-view="info">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5V3h6v1.5M9 11l2 2 4-4M9 17h6"/></svg>
@@ -1408,29 +1606,75 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 (function () {
   "use strict";
 
-  /* ---------------- Translations ----------------
-     English, Icibemba (bem) and Chinyanja (ny). Centre names, town and province
-     names stay as they appear on official signs. */
+  var SITE_URL = "https://zachlindeque-art.github.io/ZNBS-App-/";
+
+  /* ---------------- Donation rules ----------------
+     How long a donor waits before giving again, by what they gave last.
+     Whole blood: men 3 months, women 4 months (from the ZNBTS meeting).
+     Platelets and plasma: 2 weeks (to be confirmed by ZNBTS).
+     When sex is not known, the longer wait is used. */
+  var RULES = {
+    whole: { m: { months: 3 }, f: { months: 4 } },
+    platelets: { days: 14 },
+    plasma: { days: 14 }
+  };
+  var TYPES = ["whole", "platelets", "plasma"];
+
+  /* ---------------- Translations ---------------- */
   var I18N = {
     en: {
       code: "EN", lang_label: "Language", lang_set: "Language: English",
-      nav_home: "Home", nav_find: "Find a centre", nav_remind: "My reminder", nav_info: "Before you donate",
-      tab_home: "Home", tab_find: "Find", tab_remind: "Reminder", tab_info: "Before",
+      brand_sub: "Independent prototype · not an official ZNBTS app",
+      nav_home: "Home", nav_find: "Find a centre", nav_remind: "Donor card", nav_info: "Before you donate",
+      tab_home: "Home", tab_find: "Find", tab_remind: "Card", tab_info: "Before",
+
+      type_whole: "Whole blood", type_platelets: "Platelets", type_plasma: "Plasma",
+      typel_whole: "whole blood", typel_platelets: "platelets", typel_plasma: "plasma",
+      every_months: "every {n} months", every_weeks: "every {n} weeks",
+      rule_whole: "Men every {m} months, women every {f} months",
+      rule_weeks: "Every {w} weeks",
+
+      welcome_eyebrow: "Welcome", eyebrow_profile: "Your details",
+      welcome_title: "Set up your donor card",
+      welcome_intro: "Tell us a little about you so we can work out when you can give again and remind you.",
+      prof_edit_title: "Edit your donor profile",
+      f_about: "About you", f_name: "Your name", f_optional: "Optional",
+      f_phone: "Phone number", f_email: "Email address",
+      f_sex: "Sex", sex_m: "Male", sex_f: "Female",
+      f_sex_hint: "Men can give whole blood every {m} months and women every {f} months, so this sets your reminder.",
+      f_bg: "Blood group",
+      f_types: "How do you donate?", f_types_hint: "Choose all that apply. You can change this later.",
+      f_channels: "How should we remind you?",
+      ch_app: "In this app", ch_app_hint: "Always on",
+      ch_sms: "SMS", ch_sms_hint: "To your phone",
+      ch_email: "Email", ch_email_hint: "To your inbox",
+      f_consent: "I agree that ZNBTS may send me reminders and blood drive news by SMS or email. I can stop at any time.",
+      pilot_note: "SMS and email reminders start when the ZNBTS pilot launches. Until then, your details stay on this phone only.",
+      btn_save_profile: "Save and continue", btn_save_changes: "Save changes",
+      btn_skip: "Skip for now", btn_cancel: "Cancel",
+      err_phone: "Enter a Zambian mobile number, for example 097 123 4567.",
+      err_email: "Check the email address. It should look like name@example.com.",
+      err_need_phone: "Add your phone number to get SMS reminders.",
+      err_need_email: "Add your email address to get email reminders.",
+      err_consent: "Tick the box to agree to SMS or email reminders, or untick SMS and Email.",
+      t_profile_saved: "Profile saved.",
 
       eyebrow_next: "Your next donation",
-      eyebrow_last: "Last donation {date}",
+      eyebrow_last: "Last donation: {type}, {date}",
       ready_title: "Ready when you are",
-      lead_none_html: "Give blood, log it here, and we'll remind you every {m} months. If you donate today, your next reminder is <strong>{date}</strong>.",
+      lead_none_html: "Give blood, log it on your donor card, and we'll remind you when you can give again. If you give {type} today, you can give again on <strong>{date}</strong>.",
       ready_again_title: "You can give again",
-      lead_ready_html: "Your body has had {m} months to rebuild. <strong>Find a centre</strong> and save another life.",
+      lead_ready_html: "Your body has had time to recover since your last donation. <strong>Find a centre</strong> and save another life.",
       lead_wait_html: "You can give again on <strong>{date}</strong>. We'll remind you then.",
       hero_days_html: "{n}<span class='unit'>{unit}</span>",
       day_one: "day", day_many: "days",
       cap_full: "Full and ready",
-      cap_rebuild: "Rebuilding: day {d} of {t}",
+      cap_rebuild: "Recovering: day {d} of {t}",
       banner_html: "<b>You can give blood again.</b> Your reminder date has arrived.",
       btn_find: "Find a centre", btn_log_past: "Log a past donation", btn_today: "I donated today",
-      btn_reminder_settings: "Reminder settings", btn_see_centres: "See centres",
+      btn_card: "Open donor card", btn_see_centres: "See centres",
+      nudge_text: "Add your details and how you donate so your reminder uses the right waiting time.",
+      btn_add_details: "Add my details", btn_edit_profile: "Edit profile",
       eyebrow_nearest: "Nearest centre",
       near_find_title: "Find the blood centre closest to you",
       near_find_meta: "There is a ZNBTS centre in every province.",
@@ -1439,6 +1683,11 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       btn_see_all: "See all centres", btn_open_map: "Open the map", btn_directions: "Directions",
       eyebrow_every: "Every donation",
       fact_ml: "ml of blood, about one unit", fact_hour: "hour from arrival to leaving", fact_three: "patients it can help, at most",
+      invite_title: "Bring a friend",
+      invite_text: "One donation can help up to three patients. Ask a friend to come with you next time.",
+      btn_whatsapp: "Share on WhatsApp", btn_copy: "Copy link",
+      share_msg: "I'm a blood donor. Find a blood centre near you and get a reminder when you can give again: {url}",
+      t_copied: "Link copied.", t_copy_fail: "Couldn't copy. Here is the link: {url}",
       helps_title: "Who your blood helps",
       help1_b: "Mothers giving birth", help1_s: "Bleeding before, during and after labour.",
       help2_b: "Children under five", help2_s: "Severe anaemia from malaria.",
@@ -1461,57 +1710,74 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       dist_under1: "under 1 km",
       map_offline: "The map needs an internet connection. The list of centres still works.",
 
-      remind_title: "My reminder",
-      remind_intro: "Log each donation and the app works out when you can give again. Add the reminder to your phone's calendar so it reaches you even when this app is closed.",
-      eyebrow_next_reminder: "Next reminder",
+      remind_title: "My donor card",
+      remind_intro: "Your details, your donations and your next date to give.",
+      card_donor: "Donor",
+      card_no_profile: "Add your details so we can set the right reminder for you.",
+      card_reminders: "Reminders: {list}",
+      card_pilot: "SMS and email start with the pilot",
+      sex_unknown_note: "Add your sex to your profile to get the exact waiting time for whole blood. Until then we use {f} months.",
+      eyebrow_next_reminder: "Next donation",
       not_set: "Not set",
       rel_none: "Log a donation to set your first reminder.",
       rel_today: "That's today. You can give blood now.",
       rel_overdue: "You've been able to give again for {n} {unit}.",
-      rel_wait: "In {n} {unit}, {m} months after your last donation.",
-      interval_legend: "Remind me every",
-      int_6: "6 months", int_4: "4 months", int_3: "3 months",
-      interval_help: "Six months is a comfortable gap between whole blood donations. Many blood services allow 3 months for men and 4 for women, so ask your centre what applies to you.",
+      rel_wait: "In {n} {unit}.",
+      basis: "Based on your {type} donation on {date}.",
       btn_ics: "Add to calendar",
       notify_off: "Turn on notifications", notify_on: "Notifications on", notify_blocked: "Notifications blocked",
-      notify_status_due: "The calendar reminder repeats every {m} months, starting {date}. If you donate on a different day, log it and add the new reminder.",
+      notify_status_due: "The calendar reminder repeats {every}, starting {date}. If you donate on a different day, log it and add the new reminder.",
       notify_status_none: "Once you log a donation you can add a repeating reminder to your calendar.",
-      eyebrow_log: "Log a donation", label_date: "Date you donated", label_where: "Where",
+      eyebrow_log: "Log a donation", label_type: "Type of donation", label_date: "Date you donated", label_where: "Where",
       btn_save: "Save donation",
       opt_mobile: "Mobile blood drive", opt_other: "Somewhere else", not_recorded: "Not recorded",
       err_date: "Choose the date you donated.",
       err_future: "That date is in the future. Choose today or an earlier date.",
       err_year: "Check the year of that date.",
-      err_dup: "You've already logged a donation on {date}.",
-      eyebrow_card: "My donor card", stat_count: "donations logged", stat_helped: "patients helped, up to",
-      blood_group: "Blood group", not_sure: "Not sure",
+      err_dup: "You've already logged a {type} donation on {date}.",
+      stat_total: "Total",
+      not_sure: "Not sure",
       eyebrow_history: "History", device_only: "Saved on this device only",
       history_empty: "No donations logged yet. Your first one will appear here.",
       remove_aria: "Remove donation on {date}",
       switching: "Switching phones? Your history stays in this browser.",
-      clear: "Clear my data", clear_q: "Delete all donations and settings?", del: "Delete", keep: "Keep",
+      clear: "Clear my data", clear_q: "Delete your profile, donations and settings?", del: "Delete", keep: "Keep",
 
       info_title: "Before you donate",
       info_intro: "Giving blood takes about an hour, and the needle part only around ten minutes. Here is what to expect. The team at the centre checks every donor and makes the final decision.",
+      ways_title: "Ways to donate",
+      way_often: "How often", way_time: "Takes", way_helps: "Helps",
+      whole_what: "The most common donation. About 450 ml of blood is collected.",
+      whole_time: "About 10 minutes with the needle",
+      whole_helps: "Mothers who bleed in childbirth, children with severe anaemia, and accident and surgery patients.",
+      plt_what: "A machine collects only your platelets and returns the rest of your blood to you. This is called apheresis.",
+      plt_time: "1 to 2 hours",
+      plt_helps: "Platelets help blood to clot. They are used for patients with cancer, leukaemia and severe bleeding.",
+      pls_what: "Plasma is the liquid part of your blood. It is also collected by apheresis.",
+      pls_time: "About 1 hour",
+      pls_helps: "Patients with severe burns, heavy bleeding, and liver or clotting problems.",
+      ways_note: "Platelet and plasma donation may only be available at some centres. Ask your nearest centre.",
       info_who_h: "Who can usually give",
       who1: "You are aged 16 to 65", who2: "You weigh at least 50 kg", who3: "You feel well on the day",
       who4: "You consider your blood safe to give to a patient",
       who_note: "On arrival the team checks your weight, blood pressure and haemoglobin (iron level) with a quick finger prick.",
       info_before_h: "Before you go",
-      b1: "Eat a proper meal in the 3 to 4 hours before", b2: "Drink plenty of water", b3: "Avoid alcohol the day before",
+      b1: "Eat a proper meal in the 3 to 4 hours before",
+      b6: "In the days before, eat iron-rich food such as beans, kapenta, eggs, meat and dark green vegetables like rape or pumpkin leaves",
+      b2: "Drink plenty of water", b3: "Avoid alcohol the day before",
       b4: "Carry your NRC or another photo ID", b5: "Wear a top with sleeves that roll up easily",
       info_after_h: "After you donate",
       a1: "Rest for 10 to 15 minutes and take the drink and snack offered", a2: "Drink extra fluids for the next 24 hours",
       a3: "Skip heavy lifting and hard exercise for the rest of the day", a4: "If you feel faint, sit or lie down with your feet raised",
-      a5: "Log the donation here so your reminder stays accurate",
+      a5: "Log the donation on your donor card so your reminder stays accurate",
       info_ask_h: "Check with the team first if you",
-      k1: "Have a fever, cough or feel unwell", k2: "Have had malaria recently", k3: "Are pregnant or have recently given birth",
+      k1: "Have a fever, cough or feel unwell", k2: "Have had malaria recently", k6: "Have had a vaccination recently",
+      k3: "Are pregnant or have recently given birth",
       k4: "Had a tattoo, piercing, surgery or a transfusion recently", k5: "Take regular medication",
       about_h: "About this app",
-      about_p: "This is an independent prototype of a blood donor app. It is not made by, endorsed by or connected to the Zambia National Blood Transfusion Service (ZNBTS). The map shows the towns where ZNBTS runs provincial blood centres. Confirm exact addresses, phone numbers and opening hours with ZNBTS before you travel. Your donation history and reminder settings are stored only in this browser and are never sent anywhere.", brand_sub: "Independent prototype · not an official ZNBTS app",
+      about_p: "This is an independent prototype of a blood donor app, prepared for a pilot with the Zambia National Blood Transfusion Service (ZNBTS). It is not yet an official ZNBTS app. The donation rules and health information come from public sources and must be confirmed by ZNBTS before release. The map shows the towns where ZNBTS runs provincial blood centres. Your profile, donations and settings are stored only on this device and are never sent anywhere.",
 
-      t_saved: "Saved. Next reminder: {date}.", t_removed: "Removed {date}.", t_undo: "Undo",
-      t_moved: "Reminder moved to {date}.", t_every: "You'll be reminded every {m} months.",
+      t_saved: "Saved. Next donation: {date}.", t_removed: "Removed {date}.", t_undo: "Undo",
       t_ics_ok: "Reminder file saved. Open it to add it to your calendar.",
       t_ics_fail: "Couldn't create the calendar file. Try the Google Calendar button instead.",
       t_notify_on: "Notifications on. You'll get one when you open the app on your due date.",
@@ -1522,29 +1788,63 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       t_geo_fail: "Couldn't get your location. Choose your town from the list instead.",
       t_cleared: "All data cleared from this device.",
       n_title: "Time to give blood",
-      n_body: "It has been {m} months since your last donation. Find a ZNBTS centre near you.",
+      n_body: "You can give blood again. Find a ZNBTS centre near you.",
       cal_desc: "You can give blood again. Find your nearest ZNBTS blood centre and remember to eat and drink water before you go."
     },
 
     bem: {
       code: "BEM", lang_label: "Ululimi", lang_set: "Ululimi: Icibemba",
-      nav_home: "Ku ng'anda", nav_find: "Fwaya icifulo", nav_remind: "Ukucibukisha", nav_info: "Ilyo tamulapeela",
-      tab_home: "Ku ng'anda", tab_find: "Fwaya", tab_remind: "Ukucibukisha", tab_info: "Ifya kwishiba",
+      brand_sub: "Ya kwesha fye · te ya ZNBTS",
+      nav_home: "Ku ng'anda", nav_find: "Fwaya icifulo", nav_remind: "Ikadi lyandi", nav_info: "Ilyo tamulapeela",
+      tab_home: "Ku ng'anda", tab_find: "Fwaya", tab_remind: "Ikadi", tab_info: "Ifya kwishiba",
+
+      type_whole: "Umulopa onse", type_platelets: "Platelets", type_plasma: "Plasma",
+      typel_whole: "umulopa onse", typel_platelets: "platelets", typel_plasma: "plasma",
+      every_months: "cila myeshi {n}", every_weeks: "cila milungu {n}",
+      rule_whole: "Abaume cila myeshi {m}, abanakashi cila myeshi {f}",
+      rule_weeks: "Cila milungu {w}",
+
+      welcome_eyebrow: "Mwaiseni", eyebrow_profile: "Ifyenu",
+      welcome_title: "Pangeni ikadi lyenu ilya kupeela umulopa",
+      welcome_intro: "Tusokeleni panono pali imwe pa kuti twishibe ilyo mukapeela na kabili no kumucibukisha.",
+      prof_edit_title: "Alulenipo ifyenu",
+      f_about: "Pali imwe", f_name: "Ishina lyenu", f_optional: "Te ca kukakatila",
+      f_phone: "Inambala ya foni", f_email: "Email",
+      f_sex: "Umwaume nangu umwanakashi", sex_m: "Umwaume", sex_f: "Umwanakashi",
+      f_sex_hint: "Abaume kuti bapeela umulopa onse cila myeshi {m}, abanakashi cila myeshi {f}. Ici e cilenga ubushiku bwa kumucibukisha.",
+      f_bg: "Umusango wa mulopa",
+      f_types: "Mupeela shani?", f_types_hint: "Saleni fyonse ifilemulingila. Kuti mwaalula panuma.",
+      f_channels: "Tumucibukishe shani?",
+      ch_app: "Muli iyi app", ch_app_hint: "Lyonse kulabomba",
+      ch_sms: "SMS", ch_sms_hint: "Ku foni yenu",
+      ch_email: "Email", ch_email_hint: "Ku email yenu",
+      f_consent: "Nasumina ukuti ZNBTS ingantumina ukucibukisha na amalyashi ya kulonganika umulopa pa SMS nangu pa email. Kuti naleka ilyo lyonse.",
+      pilot_note: "Ukucibukisha pa SMS na pa email kukatendeka ilyo ukwesha (pilot) kwa ZNBTS kwatendeka. Ukufika ilyo, ifyenu fishala fye pali iyi foni.",
+      btn_save_profile: "Sungeni no kutwalilila", btn_save_changes: "Sungeni ifyo mwaalula",
+      btn_skip: "Leka pali nomba", btn_cancel: "Leka",
+      err_phone: "Lembeni inambala ya foni iya mu Zambia, pamo nga 097 123 4567.",
+      err_email: "Moneni bwino email yenu. Ifwile ukuba nga ishina@example.com.",
+      err_need_phone: "Lembeni inambala ya foni pa kuti mupokelele ukucibukisha pa SMS.",
+      err_need_email: "Lembeni email yenu pa kuti mupokelele ukucibukisha pa email.",
+      err_consent: "Tobeni pa kasanduku ka kusumina, nangu fumyeni SMS na Email.",
+      t_profile_saved: "Ifyenu fyasungwa.",
 
       eyebrow_next: "Ukupeela kwenu ukukonkapo",
-      eyebrow_last: "Ukupeela kwa kulekelesha: {date}",
+      eyebrow_last: "Ukupeela kwa kulekelesha: {type}, {date}",
       ready_title: "Tulemulolela",
-      lead_none_html: "Peeleni umulopa, mulembe pano, kabili tukalamucibukisha cila myeshi {m}. Nga mwapeela lelo, tukamucibukisha pa <strong>{date}</strong>.",
+      lead_none_html: "Peeleni umulopa, mulembe pa kadi lyenu, kabili tukamucibukisha ilyo mukapeela na kabili. Nga mwapeela {type} lelo, kuti mwapeela na kabili pa <strong>{date}</strong>.",
       ready_again_title: "Kuti mwapeela na kabili",
-      lead_ready_html: "Umubili wenu walikwata imyeshi {m} ukubwesesha umulopa. <strong>Fwayeni icifulo</strong> kabili pususheni umweo umbi.",
+      lead_ready_html: "Umubili wenu walikwata inshita ya kubwelela bwino ukutula apo mwapeelele. <strong>Fwayeni icifulo</strong> kabili pususheni umweo umbi.",
       lead_wait_html: "Kuti mwapeela na kabili pa <strong>{date}</strong>. Tukamucibukisha ilyo ubo bushiku bwafika.",
       hero_days_html: "<span class='unit pre'>{unit}</span>{n}",
       day_one: "ubushiku", day_many: "inshiku",
       cap_full: "Mwaipekanya",
-      cap_rebuild: "Umulopa ulebwelelamo: ubushiku {d} pa {t}",
+      cap_rebuild: "Umubili ulebwelela: ubushiku {d} pa {t}",
       banner_html: "<b>Kuti mwapeela umulopa na kabili.</b> Ubushiku bwa kumucibukisha bwafika.",
       btn_find: "Fwayeni icifulo", btn_log_past: "Lembeni ukupeela kwa kale", btn_today: "Napeela lelo",
-      btn_reminder_settings: "Ifya kucibukisha", btn_see_centres: "Moneni ififulo",
+      btn_card: "Isuleni ikadi", btn_see_centres: "Moneni ififulo",
+      nudge_text: "Lembeni ifyenu ne fyo mupeela pa kuti ukucibukisha kube ukwalungama.",
+      btn_add_details: "Lembeni ifyandi", btn_edit_profile: "Alula ifyandi",
       eyebrow_nearest: "Icifulo icipalamipo",
       near_find_title: "Fwayeni icifulo ca mulopa icipalamine kuli imwe",
       near_find_meta: "Kuli icifulo ca ZNBTS mu province imo na imo.",
@@ -1553,6 +1853,11 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       btn_see_all: "Moneni ififulo fyonse", btn_open_map: "Isuleni mapu", btn_directions: "Inshila",
       eyebrow_every: "Cila lyo mwapeela",
       fact_ml: "ml ya mulopa, iyunite imo", fact_hour: "insa ukufuma pa kufika ukufika pa kuya", fact_three: "abalwele kuti yaafwa",
+      invite_title: "Iseni na cibusa",
+      invite_text: "Ukupeela kumo kuti kwaafwa abalwele ukufika kuli batatu. Ipusheni cibusa wenu ukwisa na imwe umuku ukonkapo.",
+      btn_whatsapp: "Tumeni pa WhatsApp", btn_copy: "Kopeni link",
+      share_msg: "Ndi umupeela wa mulopa. Fwayeni icifulo ca mulopa icipalamine kuli imwe kabili mupokelele ukucibukisha ilyo mukapeela na kabili: {url}",
+      t_copied: "Link yakopwa.", t_copy_fail: "Twafilwa ukukopa. Link ni iyi: {url}",
       helps_title: "Abo umulopa wenu waafwa",
       help1_b: "Bamayo abalefyala", help1_s: "Abafumya umulopa ilyo tabalafyala, ilyo balefyala na panuma ya kufyala.",
       help2_b: "Abana abashilafikapo imyaka isano", help2_s: "Ukucepa kwa mulopa ukwaletwa na malaria.",
@@ -1575,57 +1880,74 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       dist_under1: "pa nshi ya 1 km",
       map_offline: "Mapu ilefwaya intaneti. Ilisiti lya fifulo lilabomba.",
 
-      remind_title: "Ukucibukishiwa kwandi",
-      remind_intro: "Lembeni cila lyo mwapeela, kabili app ikapenda ilyo mukapeela na kabili. Bikeni ukucibukisha pa kalenda ya foni yenu pa kuti kukamufikile nangu app yaisalwa.",
-      eyebrow_next_reminder: "Ukucibukisha ukukonkapo",
+      remind_title: "Ikadi lyandi ilya kupeela umulopa",
+      remind_intro: "Ifyenu, ukupeela kwenu, no bushiku bwa kupeela na kabili.",
+      card_donor: "Umupeela wa mulopa",
+      card_no_profile: "Lembeni ifyenu pa kuti tubike ukucibukisha ukwalungama.",
+      card_reminders: "Ukucibukisha: {list}",
+      card_pilot: "SMS na email fikatendeka na pilot",
+      sex_unknown_note: "Lembeni nga muli umwaume nangu umwanakashi pa kuti tupende bwino inshita ya kulolela. Ukufika ilyo tulebomfya imyeshi {f}.",
+      eyebrow_next_reminder: "Ukupeela ukukonkapo",
       not_set: "Tacilabikwa",
       rel_none: "Lembeni ukupeela pa kuti mubike ukucibukisha kwa ntanshi.",
       rel_today: "Ni lelo. Kuti mwapeela umulopa nomba.",
       rel_overdue: "Papita {unit} {n} ukutula apo mwaipekenye ukupeela na kabili.",
-      rel_wait: "Mu {unit} {n}, imyeshi {m} panuma ya kupeela kwenu kwa kulekelesha.",
-      interval_legend: "Mucibukishe cila",
-      int_6: "Imyeshi 6", int_4: "Imyeshi 4", int_3: "Imyeshi 3",
-      interval_help: "Imyeshi 6 ni nshita isuma pakati ka kupeela umulopa. Ififulo ifingi filasuminisha imyeshi 3 ku baume ne myeshi 4 ku banakashi, eico ipusheni icifulo cenu ifyo filemulingila.",
+      rel_wait: "Mu {unit} {n}.",
+      basis: "Ukulingana no kupeela kwenu kwa {type} pa {date}.",
       btn_ics: "Bikeni pa kalenda",
       notify_off: "Isuleni ukwishibishiwa", notify_on: "Ukwishibishiwa kwaisuka", notify_blocked: "Ukwishibishiwa kwacilikilwa",
-      notify_status_due: "Ukucibukisha pa kalenda kukalabwekeshapo cila myeshi {m}, ukutendeka pa {date}. Nga mwapeela pa bushiku bumbi, lembeni no kubika ukucibukisha ukupya.",
+      notify_status_due: "Ukucibukisha pa kalenda kukalabwekeshapo {every}, ukutendeka pa {date}. Nga mwapeela pa bushiku bumbi, lembeni no kubika ukucibukisha ukupya.",
       notify_status_none: "Nga mwalemba ukupeela, kuti mwabika ukucibukisha ukulabwekeshapo pa kalenda yenu.",
-      eyebrow_log: "Lembeni ukupeela", label_date: "Ubushiku mwapeelelepo", label_where: "Uko mwapeelele",
+      eyebrow_log: "Lembeni ukupeela", label_type: "Umusango wa kupeela", label_date: "Ubushiku mwapeelelepo", label_where: "Uko mwapeelele",
       btn_save: "Sungeni",
       opt_mobile: "Ukulonganika ukwa kwenda", opt_other: "Kumbi", not_recorded: "Tacalembwa",
       err_date: "Saleni ubushiku mwapeelelepo.",
       err_future: "Ubo bushiku tabulafika. Saleni lelo nangu ubushiku bwapitapo.",
       err_year: "Moneni umwaka wa bushiku ubo.",
-      err_dup: "Mwalilembele kale ukupeela pa {date}.",
-      eyebrow_card: "Ikadi lyandi ilya kupeela", stat_count: "ukupeela ukwalembwa", stat_helped: "abalwele baafwilwe, ukufika",
-      blood_group: "Umusango wa mulopa", not_sure: "Nshishibe",
+      err_dup: "Mwalilembele kale ukupeela kwa {type} pa {date}.",
+      stat_total: "Fyonse",
+      not_sure: "Nshishibe",
       eyebrow_history: "Ifyapita", device_only: "Fyasungwa pa foni iyi fye",
       history_empty: "Tamulalemba ukupeela. Ukwa ntanshi kukamoneka pano.",
       remove_aria: "Fumyeni ukupeela kwa pa {date}",
       switching: "Mulealula foni? Ifyo mwalemba fikashala muli iyi browser.",
-      clear: "Fuuteni ifyandi fyonse", clear_q: "Fuuteni ukupeela konse na fyonse mwabikile?", del: "Fuuteni", keep: "Sungeni",
+      clear: "Fuuteni ifyandi fyonse", clear_q: "Fuuteni ifyenu, ukupeela konse na fyonse mwabikile?", del: "Fuuteni", keep: "Sungeni",
 
       info_title: "Ilyo tamulapeela",
       info_intro: "Ukupeela umulopa kwingabomfya insa imo, kabili ukupoka umulopa kwine kulaba fye pa mamineti nalimo ikumi. Ifi e fyo mufwile ukwenekela. Abakalamba pa cifulo balapima cila muntu kabili e bapingula.",
+      ways_title: "Inshila sha kupeela",
+      way_often: "Cila lisa", way_time: "Inshita", way_helps: "Abo yaafwa",
+      whole_what: "Iyi e nshila ya kupeela iyaseeka. Umulopa wa ml 450 ulapokwa.",
+      whole_time: "Mamineti nalimo 10 pa nshindano",
+      whole_helps: "Bamayo abafumya umulopa ilyo balefyala, abana abakwata ukucepa kwa mulopa, na abacenwa mu ngozi nangu abalepulwa.",
+      plt_what: "Icipe cilapoka fye ama-platelets yenu kabili cilabwesha umulopa uushele mu mubili wenu. Ici citwa apheresis.",
+      plt_time: "Insa 1 ukufika ku 2",
+      plt_helps: "Ama-platelets yalaafwa umulopa ukwikata. Yalabomfiwa ku balwele ba cancer, leukaemia na abafumya umulopa uwingi.",
+      pls_what: "Plasma ni menshi ya mu mulopa wenu. Nayo ilapokwa ukupitila mu apheresis.",
+      pls_time: "Nalimo insa 1",
+      pls_helps: "Abalwele abaocele sana, abafumya umulopa uwingi, na abakwata amalwele ya liver nangu ya kwikata kwa mulopa.",
+      ways_note: "Ukupeela platelets na plasma kuti kwasangwa fye ku fifulo fimo. Ipusheni icifulo icipalamipo.",
       info_who_h: "Abo kuti bapeela",
       who1: "Muli ne myaka ukufuma pa 16 ukufika pa 65", who2: "Mufina 50 kg nangu ukucila", who3: "Mulemfwa bwino pa bushiku bwa kupeela",
       who4: "Mulesumina ukuti umulopa wenu taukaleta ubwafya ku mulwele",
       who_note: "Ilyo mwafika, abakalamba balapima ubufine, blood pressure na haemoglobin (icela ca mu mulopa) ukupitila mu kutobola panono umunwe.",
       info_before_h: "Ilyo tamulaya",
-      b1: "Lyeni ifya kulya ifisuma mu nsa 3 ukufika ku 4 ilyo tamulaya", b2: "Nweni amenshi ayengi", b3: "Mwinwa ubwalwa ubushiku bwa ntanshi",
+      b1: "Lyeni ifya kulya ifisuma mu nsa 3 ukufika ku 4 ilyo tamulaya",
+      b6: "Mu nshiku ilyo tamulapeela, lyeni ifya kulya ifyaba ne iron, nga ifilemba, kapenta, amani, inama, na mabula ayabishi nga rape nangu amabula ya mungu",
+      b2: "Nweni amenshi ayengi", b3: "Mwinwa ubwalwa ubushiku bwa ntanshi",
       b4: "Sendeni NRC yenu nangu icitupa cimbi ica cikope", b5: "Fwaleni ishati iyo amaboko yalapetwa bwangu",
       info_after_h: "Panuma ya kupeela",
       a1: "Tuusheni pa mamineti 10 ukufika ku 15, kabili pokeleleni ifya kunwa na ifya kulya ifyo bamupeela", a2: "Nweni ifya kunwa ifingi mu nsa 24 ishikonkapo",
       a3: "Mwisenda ifisendo ifyafina nangu ukucita ama-exercise ayakosa ubushiku bonse", a4: "Nga mwaumfwa nga mulefwa ukuwa, ikaleni nangu lalikeni no kuimya amakasa",
-      a5: "Lembeni ukupeela pano pa kuti ukucibukisha kube ukwalungama",
+      a5: "Lembeni ukupeela pa kadi lyenu pa kuti ukucibukisha kube ukwalungama",
       info_ask_h: "Ipusheni abakalamba intanshi nga",
-      k1: "Mulekaba umubili, mulekolola nangu tamulemfwa bwino", k2: "Mwalwele malaria nomba line", k3: "Muli ne fumo nangu mwafyala nomba line",
+      k1: "Mulekaba umubili, mulekolola nangu tamulemfwa bwino", k2: "Mwalwele malaria nomba line", k6: "Mwalitobelwe inshindano ya kucingilila (vaccine) nomba line",
+      k3: "Muli ne fumo nangu mwafyala nomba line",
       k4: "Mwalembele tattoo, mwatobwele umubili, mwalepulwa (opareshoni) nangu mwapokele umulopa nomba line", k5: "Mulanwa umuti lyonse",
       about_h: "Pali iyi app",
-      about_p: "Iyi app ni ya kwesha (prototype) iyapangwa ku muntu umbi. Tayapangwa, nangu ukusuminishiwa, na Zambia National Blood Transfusion Service (ZNBTS). Mapu ilelanga amatauni umo ZNBTS ikwata ififulo fya mulopa ifya ma province. Shininkisheni apo icifulo cili, inambala sha foni ne nshita sha kwisula na ZNBTS ilyo tamulaya. Ifyo mwalemba na fyo mwasala fisungwa fye muli iyi browser kabili tafitumwa kumbi.", brand_sub: "Ya kwesha fye · te ya ZNBTS",
+      about_p: "Iyi app ni ya kwesha (prototype) iyapangwa ku muntu umbi, iyapekanishiwa ukwesha (pilot) pamo na Zambia National Blood Transfusion Service (ZNBTS). Tailaba app ya ZNBTS iya cine cine. Amafunde ya kupeela umulopa ne fya bumi fyafuma ku fifulo fya pa intaneti kabili ZNBTS ifwile ukufishininkisha ilyo tabalaisula iyi app. Mapu ilelanga amatauni umo ZNBTS ikwata ififulo fya mulopa ifya ma province. Ifyenu, ukupeela kwenu ne fyo mwasala fisungwa fye pali iyi foni kabili tafitumwa kumbi.",
 
-      t_saved: "Fyasungwa. Ukucibukisha ukukonkapo: {date}.", t_removed: "Mwafumya {date}.", t_undo: "Bwekeshapo",
-      t_moved: "Ukucibukisha kwasunshiwa ku {date}.", t_every: "Tukalamucibukisha cila myeshi {m}.",
+      t_saved: "Fyasungwa. Ukupeela ukukonkapo: {date}.", t_removed: "Mwafumya {date}.", t_undo: "Bwekeshapo",
       t_ics_ok: "Ifaelo lya kucibukisha lyasungwa. Lyisuleni pa kulibika pa kalenda yenu.",
       t_ics_fail: "Twafilwa ukupanga ifaelo lya kalenda. Eseniko Google Calendar.",
       t_notify_on: "Ukwishibishiwa kwaisuka. Mukalapokelela ilyo mwaisula app pa bushiku bwenu.",
@@ -1636,29 +1958,63 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       t_geo_fail: "Twafilwa ukusanga apo muli. Saleni itauni yenu mu lisiti.",
       t_cleared: "Fyonse fyafuutwa pa foni iyi.",
       n_title: "Nshita ya kupeela umulopa",
-      n_body: "Papita imyeshi {m} ukutula apo mwapeelele. Fwayeni icifulo ca ZNBTS icipalamipo.",
+      n_body: "Kuti mwapeela umulopa na kabili. Fwayeni icifulo ca ZNBTS icipalamipo.",
       cal_desc: "Kuti mwapeela umulopa na kabili. Fwayeni icifulo ca ZNBTS icipalamipo, kabili ibukisheni ukulya no kunwa amenshi ilyo tamulaya."
     },
 
     ny: {
       code: "NY", lang_label: "Chilankhulo", lang_set: "Chilankhulo: Chinyanja",
-      nav_home: "Kunyumba", nav_find: "Pezani malo", nav_remind: "Chikumbutso changa", nav_info: "Musanapereke",
-      tab_home: "Kunyumba", tab_find: "Pezani", tab_remind: "Chikumbutso", tab_info: "Zofunika",
+      brand_sub: "Yoyesera chabe · si ya ZNBTS",
+      nav_home: "Kunyumba", nav_find: "Pezani malo", nav_remind: "Khadi langa", nav_info: "Musanapereke",
+      tab_home: "Kunyumba", tab_find: "Pezani", tab_remind: "Khadi", tab_info: "Zofunika",
+
+      type_whole: "Magazi onse", type_platelets: "Platelets", type_plasma: "Plasma",
+      typel_whole: "magazi onse", typel_platelets: "platelets", typel_plasma: "plasma",
+      every_months: "pakatha miyezi {n} iliyonse", every_weeks: "pakatha masabata {n} aliwonse",
+      rule_whole: "Amuna pakatha miyezi {m} iliyonse, akazi pakatha miyezi {f} iliyonse",
+      rule_weeks: "Pakatha masabata {w} aliwonse",
+
+      welcome_eyebrow: "Takulandirani", eyebrow_profile: "Zambiri zanu",
+      welcome_title: "Konzani khadi lanu la wopereka magazi",
+      welcome_intro: "Tiuzeni pang'ono za inu kuti tiwerengere nthawi imene mungaperekenso ndi kukukumbutsani.",
+      prof_edit_title: "Sinthani zambiri zanu",
+      f_about: "Za inu", f_name: "Dzina lanu", f_optional: "Sikofunikira",
+      f_phone: "Nambala ya foni", f_email: "Email",
+      f_sex: "Mwamuna kapena mkazi", sex_m: "Mwamuna", sex_f: "Mkazi",
+      f_sex_hint: "Amuna angapereke magazi onse pakatha miyezi {m} iliyonse, akazi pakatha miyezi {f}. Izi ndizo zimakhazikitsa chikumbutso chanu.",
+      f_bg: "Gulu la magazi",
+      f_types: "Mumapereka bwanji?", f_types_hint: "Sankhani zonse zimene zikukukhudzani. Mutha kusintha pambuyo pake.",
+      f_channels: "Tikukumbutseni bwanji?",
+      ch_app: "Mu pulogalamuyi", ch_app_hint: "Nthawi zonse",
+      ch_sms: "SMS", ch_sms_hint: "Ku foni yanu",
+      ch_email: "Email", ch_email_hint: "Ku email yanu",
+      f_consent: "Ndikuvomereza kuti ZNBTS inditumizire zikumbutso ndi nkhani za kusonkhanitsa magazi pa SMS kapena email. Ndikhoza kusiya nthawi iliyonse.",
+      pilot_note: "Zikumbutso za SMS ndi email zidzayamba pamene pulogalamu yoyesera (pilot) ya ZNBTS idzayambe. Mpaka nthawi imeneyo, zambiri zanu zimakhala pa foni iyi yokha.",
+      btn_save_profile: "Sungani ndi kupitiriza", btn_save_changes: "Sungani zosintha",
+      btn_skip: "Dumphani pakadali pano", btn_cancel: "Siyani",
+      err_phone: "Lembani nambala ya foni ya ku Zambia, mwachitsanzo 097 123 4567.",
+      err_email: "Onani email yanu. Iyenera kukhala ngati dzina@example.com.",
+      err_need_phone: "Onjezani nambala ya foni kuti mulandire zikumbutso za SMS.",
+      err_need_email: "Onjezani email yanu kuti mulandire zikumbutso za email.",
+      err_consent: "Chongani bokosi kuti muvomereze zikumbutso za SMS kapena email, kapena chotsani SMS ndi Email.",
+      t_profile_saved: "Zambiri zanu zasungidwa.",
 
       eyebrow_next: "Kupereka kwanu kotsatira",
-      eyebrow_last: "Munapereka komaliza: {date}",
+      eyebrow_last: "Munapereka komaliza: {type}, {date}",
       ready_title: "Tikukuyembekezerani",
-      lead_none_html: "Perekani magazi, lembani pano, ndipo tidzakukumbutsani pakatha miyezi {m} iliyonse. Mukapereka lero, tidzakukumbutsani pa <strong>{date}</strong>.",
+      lead_none_html: "Perekani magazi, lembani pa khadi lanu, ndipo tidzakukumbutsani pamene mungaperekenso. Mukapereka {type} lero, mutha kuperekanso pa <strong>{date}</strong>.",
       ready_again_title: "Mutha kuperekanso",
-      lead_ready_html: "Thupi lanu lakhala ndi miyezi {m} kuti libwezeretse magazi. <strong>Pezani malo</strong> ndipo pulumutsani moyo wina.",
+      lead_ready_html: "Thupi lanu lakhala ndi nthawi yochira kuchokera pamene munapereka komaliza. <strong>Pezani malo</strong> ndipo pulumutsani moyo wina.",
       lead_wait_html: "Mutha kuperekanso pa <strong>{date}</strong>. Tidzakukumbutsani tsikulo likadzafika.",
       hero_days_html: "<span class='unit pre'>{unit}</span>{n}",
       day_one: "tsiku", day_many: "masiku",
       cap_full: "Mwakonzeka",
-      cap_rebuild: "Magazi akubwerera: tsiku {d} mwa {t}",
+      cap_rebuild: "Thupi likuchira: tsiku {d} mwa {t}",
       banner_html: "<b>Mutha kuperekanso magazi.</b> Tsiku lokukumbutsani lafika.",
       btn_find: "Pezani malo", btn_log_past: "Lembani kupereka kwakale", btn_today: "Ndapereka lero",
-      btn_reminder_settings: "Zokonza chikumbutso", btn_see_centres: "Onani malo",
+      btn_card: "Tsegulani khadi", btn_see_centres: "Onani malo",
+      nudge_text: "Onjezani zambiri zanu ndi momwe mumaperekera kuti chikumbutso chanu chikhale cholondola.",
+      btn_add_details: "Onjezani zambiri zanga", btn_edit_profile: "Sinthani zambiri",
       eyebrow_nearest: "Malo apafupi",
       near_find_title: "Pezani malo operekera magazi apafupi ndi inu",
       near_find_meta: "Pali malo a ZNBTS m'chigawo chilichonse.",
@@ -1667,6 +2023,11 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       btn_see_all: "Onani malo onse", btn_open_map: "Tsegulani mapu", btn_directions: "Njira",
       eyebrow_every: "Nthawi iliyonse mukapereka",
       fact_ml: "ml ya magazi, yuniti imodzi", fact_hour: "ola kuchokera pofika mpaka ponyamuka", fact_three: "odwala amene angathandizidwe",
+      invite_title: "Bweretsani mnzanu",
+      invite_text: "Kupereka kamodzi kungathandize odwala mpaka atatu. Funsani mnzanu kuti mupite limodzi nthawi ina.",
+      btn_whatsapp: "Gawanani pa WhatsApp", btn_copy: "Koperani link",
+      share_msg: "Ndine wopereka magazi. Pezani malo operekera magazi apafupi ndi inu ndipo mulandire chikumbutso pamene mungaperekenso: {url}",
+      t_copied: "Link yakoperedwa.", t_copy_fail: "Sitinathe kukopera. Link ndi iyi: {url}",
       helps_title: "Amene magazi anu amathandiza",
       help1_b: "Amayi obereka", help1_s: "Kutaya magazi asanabereke, pobereka komanso atabereka.",
       help2_b: "Ana osakwana zaka zisanu", help2_s: "Kuchepa kwa magazi chifukwa cha malungo.",
@@ -1689,57 +2050,74 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       dist_under1: "pansi pa 1 km",
       map_offline: "Mapu akufunika intaneti. Mndandanda wa malo ukugwirabe ntchito.",
 
-      remind_title: "Chikumbutso changa",
-      remind_intro: "Lembani nthawi iliyonse imene mwapereka, ndipo pulogalamuyi idzawerengera nthawi imene mungaperekenso. Ikani chikumbutso pa kalendala ya foni yanu kuti chikufikireni ngakhale pulogalamuyi itatsekedwa.",
-      eyebrow_next_reminder: "Chikumbutso chotsatira",
+      remind_title: "Khadi langa la wopereka magazi",
+      remind_intro: "Zambiri zanu, kupereka kwanu, ndi tsiku lotsatira lopereka.",
+      card_donor: "Wopereka magazi",
+      card_no_profile: "Onjezani zambiri zanu kuti tikhazikitse chikumbutso choyenera.",
+      card_reminders: "Zikumbutso: {list}",
+      card_pilot: "SMS ndi email zidzayamba ndi pilot",
+      sex_unknown_note: "Lembani ngati ndinu mwamuna kapena mkazi kuti tiwerengere bwino nthawi yodikira. Mpaka pamenepo tikugwiritsa ntchito miyezi {f}.",
+      eyebrow_next_reminder: "Kupereka kotsatira",
       not_set: "Sichinakhazikitsidwe",
       rel_none: "Lembani kupereka kuti mukhazikitse chikumbutso choyamba.",
       rel_today: "Ndi lero. Mutha kupereka magazi tsopano.",
       rel_overdue: "Patha {unit} {n} kuchokera pamene munatha kuperekanso.",
-      rel_wait: "Pakatha {unit} {n}, miyezi {m} kuchokera pamene munapereka komaliza.",
-      interval_legend: "Mundikumbutse pakatha",
-      int_6: "Miyezi 6", int_4: "Miyezi 4", int_3: "Miyezi 3",
-      interval_help: "Miyezi 6 ndi nthawi yabwino pakati pa kupereka magazi. Malo ambiri amalola miyezi 3 kwa amuna ndi miyezi 4 kwa akazi, choncho funsani malo anu zimene zikukukhudzani.",
+      rel_wait: "Pakatha {unit} {n}.",
+      basis: "Kutengera kupereka kwanu {type} pa {date}.",
       btn_ics: "Ikani pa kalendala",
       notify_off: "Yatsani zidziwitso", notify_on: "Zidziwitso zayatsidwa", notify_blocked: "Zidziwitso zaletsedwa",
-      notify_status_due: "Chikumbutso cha pa kalendala chizibwerezedwa pakatha miyezi {m} iliyonse, kuyambira pa {date}. Mukapereka pa tsiku lina, lembani ndipo ikani chikumbutso chatsopano.",
+      notify_status_due: "Chikumbutso cha pa kalendala chizibwerezedwa {every}, kuyambira pa {date}. Mukapereka pa tsiku lina, lembani ndipo ikani chikumbutso chatsopano.",
       notify_status_none: "Mukangolemba kupereka, mutha kuika chikumbutso chobwerezabwereza pa kalendala yanu.",
-      eyebrow_log: "Lembani kupereka", label_date: "Tsiku limene munapereka", label_where: "Komwe munaperekera",
+      eyebrow_log: "Lembani kupereka", label_type: "Mtundu wa kupereka", label_date: "Tsiku limene munapereka", label_where: "Komwe munaperekera",
       btn_save: "Sungani",
       opt_mobile: "Kusonkhanitsa koyendayenda", opt_other: "Kwina", not_recorded: "Sichinalembedwe",
       err_date: "Sankhani tsiku limene munapereka.",
       err_future: "Tsikulo silinafike. Sankhani lero kapena tsiku lakale.",
       err_year: "Onani chaka cha tsikulo.",
-      err_dup: "Munalemba kale kupereka pa {date}.",
-      eyebrow_card: "Khadi langa la wopereka", stat_count: "kupereka kolembedwa", stat_helped: "odwala othandizidwa, mpaka",
-      blood_group: "Gulu la magazi", not_sure: "Sindikudziwa",
+      err_dup: "Munalemba kale kupereka {type} pa {date}.",
+      stat_total: "Zonse",
+      not_sure: "Sindikudziwa",
       eyebrow_history: "Mbiri", device_only: "Zasungidwa pa chipangizo ichi chokha",
       history_empty: "Simunalembe kupereka kulikonse. Koyamba kudzaonekera pano.",
       remove_aria: "Chotsani kupereka kwa pa {date}",
       switching: "Mukusintha foni? Mbiri yanu imakhala mu browser iyi.",
-      clear: "Fufutani zanga zonse", clear_q: "Fufutani kupereka konse ndi zokonza zonse?", del: "Fufutani", keep: "Sungani",
+      clear: "Fufutani zanga zonse", clear_q: "Fufutani zambiri zanu, kupereka konse ndi zokonza zonse?", del: "Fufutani", keep: "Sungani",
 
       info_title: "Musanapereke",
       info_intro: "Kupereka magazi kumatenga pafupifupi ola limodzi, ndipo kutenga magazi kwenikweni kumatenga mphindi khumi zokha. Izi ndi zomwe muyenera kuyembekezera. Ogwira ntchito pa malowo amayeza wopereka aliyense ndipo ndiwo amapanga chiganizo chomaliza.",
+      ways_title: "Njira zoperekera",
+      way_often: "Kangati", way_time: "Nthawi", way_helps: "Amathandiza",
+      whole_what: "Iyi ndi njira yofala kwambiri. Magazi pafupifupi ml 450 amatengedwa.",
+      whole_time: "Pafupifupi mphindi 10 za singano",
+      whole_helps: "Amayi otaya magazi pobereka, ana omwe ali ndi kuchepa kwa magazi, ndi ovulala pa ngozi kapena ochitidwa opaleshoni.",
+      plt_what: "Makina amatenga ma platelets anu okha ndipo amabwezeretsa magazi ena onse m'thupi lanu. Izi zimatchedwa apheresis.",
+      plt_time: "Ola 1 mpaka 2",
+      plt_helps: "Ma platelets amathandiza magazi kuundana. Amagwiritsidwa ntchito kwa odwala khansa, leukaemia ndi otaya magazi ambiri.",
+      pls_what: "Plasma ndi gawo lamadzi la magazi anu. Nayonso imatengedwa kudzera mu apheresis.",
+      pls_time: "Pafupifupi ola 1",
+      pls_helps: "Odwala amene apsa kwambiri ndi moto, otaya magazi ambiri, ndi amene ali ndi matenda a chiwindi kapena kuundana kwa magazi.",
+      ways_note: "Kupereka ma platelets ndi plasma kungapezeke m'malo ena okha. Funsani malo apafupi.",
       info_who_h: "Amene angapereke",
       who1: "Muli ndi zaka 16 mpaka 65", who2: "Mumalemera 50 kg kapena kuposerapo", who3: "Mukumva bwino pa tsikulo",
       who4: "Mukuona kuti magazi anu ndi otetezeka kupatsa wodwala",
       who_note: "Mukafika, ogwira ntchito amayeza kulemera kwanu, blood pressure ndi haemoglobin (mlingo wa iron) pobaya pang'ono chala.",
       info_before_h: "Musanapite",
-      b1: "Idyani chakudya chokwanira maola 3 mpaka 4 musanapite", b2: "Imwani madzi ambiri", b3: "Musamwe mowa tsiku lapitalo",
+      b1: "Idyani chakudya chokwanira maola 3 mpaka 4 musanapite",
+      b6: "Masiku angapo musanapite, idyani zakudya za iron monga nyemba, kapenta, mazira, nyama ndi masamba obiriwira monga rape kapena nkhwani",
+      b2: "Imwani madzi ambiri", b3: "Musamwe mowa tsiku lapitalo",
       b4: "Tengani NRC yanu kapena chiphaso china cha chithunzi", b5: "Valani malaya amene manja ake amapindika mosavuta",
       info_after_h: "Mukapereka",
       a1: "Pumulani mphindi 10 mpaka 15 ndipo landirani chakumwa ndi chakudya chimene akupatsani", a2: "Imwani zakumwa zambiri m'maola 24 otsatira",
       a3: "Musanyamule zinthu zolemera kapena kuchita masewera olimbitsa thupi tsiku lonselo", a4: "Mukamva chizungulire, khalani pansi kapena gonani ndi mapazi anu mmwamba",
-      a5: "Lembani kupereka pano kuti chikumbutso chanu chikhale cholondola",
+      a5: "Lembani kupereka pa khadi lanu kuti chikumbutso chanu chikhale cholondola",
       info_ask_h: "Funsani ogwira ntchito kaye ngati",
-      k1: "Muli ndi kutentha thupi, chifuwa kapena simukumva bwino", k2: "Munadwala malungo posachedwa", k3: "Muli ndi pakati kapena mwabereka posachedwa",
+      k1: "Muli ndi kutentha thupi, chifuwa kapena simukumva bwino", k2: "Munadwala malungo posachedwa", k6: "Munalandira katemera posachedwa",
+      k3: "Muli ndi pakati kapena mwabereka posachedwa",
       k4: "Munajambula tattoo, kuboola thupi, kuchitidwa opaleshoni kapena kulandira magazi posachedwa", k5: "Mumamwa mankhwala nthawi zonse",
       about_h: "Za pulogalamuyi",
-      about_p: "Iyi ndi pulogalamu yoyesera (prototype) yopangidwa paokha. Siinapangidwe, kuvomerezedwa kapena kugwirizana ndi Zambia National Blood Transfusion Service (ZNBTS). Mapu akuonetsa matauni amene ZNBTS ili ndi malo a magazi a zigawo. Tsimikizirani adiresi, manambala a foni ndi nthawi zotsegulira ndi ZNBTS musananyamuke. Mbiri yanu ndi zokonza zanu zimasungidwa mu browser iyi yokha ndipo sizitumizidwa kwina kulikonse.", brand_sub: "Yoyesera chabe · si ya ZNBTS",
+      about_p: "Iyi ndi pulogalamu yoyesera (prototype) yopangidwa paokha, yokonzekera pulogalamu yoyesera (pilot) pamodzi ndi Zambia National Blood Transfusion Service (ZNBTS). Si pulogalamu yovomerezeka ya ZNBTS pakadali pano. Malamulo a kupereka magazi ndi zaumoyo zachokera pa intaneti ndipo ziyenera kutsimikiziridwa ndi ZNBTS isanatulutse pulogalamuyi. Mapu akuonetsa matauni amene ZNBTS ili ndi malo a magazi a zigawo. Zambiri zanu, kupereka kwanu ndi zokonza zanu zimasungidwa pa chipangizo ichi chokha ndipo sizitumizidwa kwina kulikonse.",
 
-      t_saved: "Zasungidwa. Chikumbutso chotsatira: {date}.", t_removed: "Mwachotsa {date}.", t_undo: "Bwezerani",
-      t_moved: "Chikumbutso chasunthidwa ku {date}.", t_every: "Tidzakukumbutsani pakatha miyezi {m} iliyonse.",
+      t_saved: "Zasungidwa. Kupereka kotsatira: {date}.", t_removed: "Mwachotsa {date}.", t_undo: "Bwezerani",
       t_ics_ok: "Fayilo ya chikumbutso yasungidwa. Itsegulani kuti muiike pa kalendala yanu.",
       t_ics_fail: "Sitinathe kupanga fayilo ya kalendala. Yesani batani la Google Calendar.",
       t_notify_on: "Zidziwitso zayatsidwa. Mudzalandira chimodzi mukatsegula pulogalamuyi pa tsiku lanu.",
@@ -1750,7 +2128,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       t_geo_fail: "Sitinapeze komwe muli. Sankhani tauni yanu pa mndandanda.",
       t_cleared: "Zonse zafufutidwa pa chipangizo ichi.",
       n_title: "Nthawi yopereka magazi",
-      n_body: "Patha miyezi {m} kuchokera pamene munapereka. Pezani malo a ZNBTS apafupi ndi inu.",
+      n_body: "Mutha kuperekanso magazi. Pezani malo a ZNBTS apafupi ndi inu.",
       cal_desc: "Mutha kuperekanso magazi. Pezani malo a ZNBTS apafupi ndipo kumbukirani kudya ndi kumwa madzi musanapite."
     }
   };
@@ -1796,7 +2174,10 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 
   /* ---------------- Storage ---------------- */
   var KEY = "znbts-donor-v1";
-  function defaults() { return { donations: [], interval: 6, bloodGroup: "", near: "", loc: null, lastNotified: "", lang: "en" }; }
+  function defaultProfile() {
+    return { name: "", phone: "", email: "", sex: "", bloodGroup: "", types: [], sms: false, emailOn: false, consent: false, registered: false, skipped: false };
+  }
+  function defaults() { return { donations: [], profile: defaultProfile(), near: "", loc: null, lastNotified: "", lang: "en" }; }
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
@@ -1804,9 +2185,18 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
         var s = JSON.parse(raw);
         if (s && Array.isArray(s.donations)) {
           var d = defaults();
-          for (var k in d) if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k];
-          d.interval = [3, 4, 6].indexOf(Number(d.interval)) < 0 ? 6 : Number(d.interval);
+          ["near", "loc", "lastNotified", "lang"].forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k]; });
+          d.donations = s.donations.filter(function (x) { return x && /^\d{4}-\d{2}-\d{2}$/.test(x.date); }).map(function (x) {
+            return { id: x.id || ("d" + Math.random().toString(36).slice(2, 9)), date: x.date, centre: x.centre || "", type: TYPES.indexOf(x.type) >= 0 ? x.type : "whole" };
+          });
+          var p = s.profile || {}, dp = defaultProfile();
+          for (var k in dp) if (Object.prototype.hasOwnProperty.call(p, k)) dp[k] = p[k];
+          if (!dp.bloodGroup && s.bloodGroup) dp.bloodGroup = s.bloodGroup; // earlier versions kept it at the top level
+          if (!Array.isArray(dp.types)) dp.types = [];
+          dp.types = dp.types.filter(function (x) { return TYPES.indexOf(x) >= 0; });
+          d.profile = dp;
           if (!I18N[d.lang]) d.lang = "en";
+          if (d.loc && d.loc.label === "your location") d.loc.label = "@you";
           return d;
         }
       }
@@ -1825,6 +2215,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     return s;
   }
   function dayUnit(n) { return n === 1 ? t("day_one") : t("day_many"); }
+  function typeName(type, lower) { return t((lower ? "typel_" : "type_") + (TYPES.indexOf(type) >= 0 ? type : "whole")); }
 
   /* ---------------- Dates ---------------- */
   function pad(n) { return (n < 10 ? "0" : "") + n; }
@@ -1832,6 +2223,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
   function todayISO() { var d = new Date(); return iso(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
   function parts(s) { var p = s.split("-"); return [Number(p[0]), Number(p[1]), Number(p[2])]; }
   function toUTC(s) { var p = parts(s); return Date.UTC(p[0], p[1] - 1, p[2]); }
+  function fromUTC(ms) { var d = new Date(ms); return iso(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); }
   function addMonths(s, n) {
     var p = parts(s);
     var m0 = p[1] - 1 + n;
@@ -1840,6 +2232,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
     return iso(y, m + 1, Math.min(p[2], last));
   }
+  function addDays(s, n) { return fromUTC(toUTC(s) + n * 86400000); }
   function daysBetween(a, b) { return Math.round((toUTC(b) - toUTC(a)) / 86400000); }
   var fmtLong = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   var fmtShort = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
@@ -1850,24 +2243,47 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
   }
   function compact(s) { return s.replace(/-/g, ""); }
 
+  /* ---------------- Waiting times ---------------- */
+  function intervalFor(type, sex) {
+    var r = RULES[type] || RULES.whole;
+    if (r.m) return sex === "m" ? r.m : r.f;
+    return r;
+  }
+  function addInterval(s, iv) { return iv.months ? addMonths(s, iv.months) : addDays(s, iv.days); }
+  function everyText(iv) { return iv.months ? t("every_months", { n: iv.months }) : t("every_weeks", { n: Math.round(iv.days / 7) }); }
+  function ruleText(type) {
+    var r = RULES[type];
+    return r.m ? t("rule_whole", { m: r.m.months, f: r.f.months }) : t("rule_weeks", { w: Math.round(r.days / 7) });
+  }
+  function preferredType() { var ts = state.profile.types; return ts && ts.length ? ts[0] : "whole"; }
+
   function sortedDonations() { return state.donations.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }); }
   function latest() { return sortedDonations()[0] || null; }
-  function nextDue() { var l = latest(); return l ? addMonths(l.date, state.interval) : null; }
+  // The next date is the latest of every donation's own waiting time.
+  function nextInfo() {
+    var best = null, sex = state.profile.sex;
+    state.donations.forEach(function (d) {
+      var iv = intervalFor(d.type, sex), due = addInterval(d.date, iv);
+      if (!best || due > best.due) best = { due: due, from: d, iv: iv };
+    });
+    return best;
+  }
+  function nextDue() { var n = nextInfo(); return n ? n.due : null; }
 
   function status() {
-    var td = todayISO(), l = latest();
-    if (!l) return { kind: "none", ifToday: addMonths(td, state.interval) };
-    var due = addMonths(l.date, state.interval);
-    var total = Math.max(1, daysBetween(l.date, due));
-    var left = daysBetween(td, due);
-    if (left <= 0) return { kind: "ready", due: due, last: l.date, overdue: -left };
-    var since = daysBetween(l.date, td);
-    return { kind: "wait", due: due, last: l.date, left: left, total: total, progress: Math.min(1, Math.max(0, since / total)) };
+    var td = todayISO(), n = nextInfo();
+    if (!n) { var pt = preferredType(); return { kind: "none", type: pt, ifToday: addInterval(td, intervalFor(pt, state.profile.sex)) }; }
+    var total = Math.max(1, daysBetween(n.from.date, n.due));
+    var left = daysBetween(td, n.due);
+    if (left <= 0) return { kind: "ready", due: n.due, from: n.from, iv: n.iv, overdue: -left };
+    var since = daysBetween(n.from.date, td);
+    return { kind: "wait", due: n.due, from: n.from, iv: n.iv, left: left, total: total, progress: Math.min(1, Math.max(0, since / total)) };
   }
 
   /* ---------------- Helpers ---------------- */
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function elOf(target) { var el = target; if (el && el.nodeType !== 1) el = el.parentNode; return el && el.closest ? el : null; }
   function centreById(id) { for (var i = 0; i < CENTRES.length; i++) if (CENTRES[i].id === id) return CENTRES[i]; return null; }
   function centreLabel(id) {
     if (id === "mobile") return t("opt_mobile");
@@ -1883,6 +2299,17 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
   }
   function fmtKm(km) { return km < 1 ? t("dist_under1") : Math.round(km).toLocaleString("en-GB") + " km"; }
 
+  // Zambian mobile numbers: 9 digits after the leading 0 or +260, starting with 7 or 9.
+  function normPhone(v) {
+    var d = String(v).replace(/[^\d+]/g, "");
+    if (d.indexOf("+260") === 0) d = d.slice(4);
+    else if (d.indexOf("260") === 0 && d.length === 12) d = d.slice(3);
+    else if (d.indexOf("0") === 0) d = d.slice(1);
+    if (!/^[79]\d{8}$/.test(d)) return null;
+    return "+260 " + d.slice(0, 2) + " " + d.slice(2, 5) + " " + d.slice(5);
+  }
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
   var toastTimer = null;
   function toast(msg, actionLabel, action) {
     var el = $("toast"), btn = $("toast-action");
@@ -1891,9 +2318,13 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     else { btn.hidden = true; btn.onclick = null; }
     el.classList.add("show");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(hideToast, actionLabel ? 6000 : 3800);
+    toastTimer = setTimeout(hideToast, actionLabel ? 6000 : 4200);
   }
   function hideToast() { $("toast").classList.remove("show"); }
+
+  var FRAMED = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
+  if (FRAMED) document.documentElement.classList.add("framed");
+  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
   /* ---------------- Location ---------------- */
   function userLoc() { return state.loc && typeof state.loc.lat === "number" ? state.loc : null; }
@@ -1914,34 +2345,41 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     Array.prototype.forEach.call(document.querySelectorAll("[data-i18n-aria]"), function (el) { el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria"))); });
     $("lang-code").textContent = t("code");
     Array.prototype.forEach.call(document.querySelectorAll("[data-lang]"), function (b) { b.setAttribute("aria-checked", String(b.getAttribute("data-lang") === state.lang)); });
+    TYPES.forEach(function (ty) {
+      $("pt-" + ty + "-rule").textContent = ruleText(ty);
+      $("often-" + ty).textContent = ruleText(ty);
+    });
+    $("sex-hint").textContent = t("f_sex_hint", { m: RULES.whole.m.months, f: RULES.whole.f.months });
   }
 
   /* ---------------- Render: home ---------------- */
   function renderHome() {
-    var s = status();
+    var s = status(), p = state.profile;
     var title = $("st-title"), lead = $("st-lead"), eyebrow = $("st-eyebrow"), actions = $("st-actions");
     var fill = $("bag-fill"), btext = $("bag-text"), cap = $("bag-cap");
     var level;
     $("ready-banner").hidden = s.kind !== "ready";
+    $("home-nudge").hidden = !!p.registered;
     title.classList.remove("long");
 
     if (s.kind === "none") {
       eyebrow.textContent = t("eyebrow_next");
       title.textContent = t("ready_title");
-      lead.innerHTML = t("lead_none_html", { m: state.interval, date: esc(fmt(s.ifToday, true)) });
+      lead.innerHTML = t("lead_none_html", { type: esc(typeName(s.type, true)), date: esc(fmt(s.ifToday, true)) });
       actions.innerHTML = '<a class="btn btn-primary" href="#find">' + esc(t("btn_find")) + '</a><a class="btn" href="#remind">' + esc(t("btn_log_past")) + "</a>";
       level = 1; btext.textContent = "100%"; cap.textContent = t("cap_full");
     } else if (s.kind === "ready") {
-      eyebrow.textContent = t("eyebrow_last", { date: fmt(s.last) });
+      var l = latest();
+      eyebrow.textContent = t("eyebrow_last", { type: typeName(l.type, true), date: fmt(l.date) });
       title.textContent = t("ready_again_title");
-      lead.innerHTML = t("lead_ready_html", { m: state.interval });
+      lead.innerHTML = t("lead_ready_html");
       actions.innerHTML = '<a class="btn btn-primary" href="#find">' + esc(t("btn_find")) + '</a><button class="btn" type="button" data-act="today">' + esc(t("btn_today")) + "</button>";
       level = 1; btext.textContent = "100%"; cap.textContent = t("cap_full");
     } else {
       eyebrow.textContent = t("eyebrow_next");
       title.innerHTML = t("hero_days_html", { n: s.left, unit: esc(dayUnit(s.left)) });
       lead.innerHTML = t("lead_wait_html", { date: esc(fmt(s.due, true)) });
-      actions.innerHTML = '<a class="btn btn-primary" href="#remind">' + esc(t("btn_reminder_settings")) + '</a><a class="btn" href="#find">' + esc(t("btn_see_centres")) + "</a>";
+      actions.innerHTML = '<a class="btn btn-primary" href="#remind">' + esc(t("btn_card")) + '</a><a class="btn" href="#find">' + esc(t("btn_see_centres")) + "</a>";
       level = s.progress; btext.textContent = Math.round(s.progress * 100) + "%";
       cap.textContent = t("cap_rebuild", { d: s.total - s.left, t: s.total });
     }
@@ -1964,12 +2402,65 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       chip.hidden = true; dir.hidden = true;
       $("near-btn").textContent = t("btn_open_map");
     }
+    renderInvite();
   }
 
-  /* ---------------- Render: reminder ---------------- */
-  function renderRemind() {
-    var s = status(), due = nextDue();
-    $("int-" + state.interval).checked = true;
+  function shareUrl() { return /^https?:$/.test(location.protocol) ? location.origin + location.pathname : SITE_URL; }
+  function renderInvite() {
+    $("wa-btn").href = "https://wa.me/?text=" + encodeURIComponent(t("share_msg", { url: shareUrl() }));
+  }
+  function copyLink() {
+    var url = shareUrl();
+    function fallback() {
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = url; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+        document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, url.length);
+        var ok = document.execCommand && document.execCommand("copy");
+        ta.remove();
+        toast(ok ? t("t_copied") : t("t_copy_fail", { url: url }));
+      } catch (e) { toast(t("t_copy_fail", { url: url })); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () { toast(t("t_copied")); }, fallback);
+    } else fallback();
+  }
+
+  /* ---------------- Render: donor card ---------------- */
+  function badgeSvg(bg) {
+    var label = bg && bg !== "unknown" ? bg : "?";
+    var size = label.length >= 3 ? 15 : 19;
+    return '<svg class="bg-badge' + (label === "?" ? " empty" : "") + '" viewBox="0 0 60 72" aria-hidden="true">' +
+      '<path d="M30 3C30 3 5 31 5 46.5a25 25 0 0 0 50 0C55 31 30 3 30 3Z"/>' +
+      '<text x="30" y="56" text-anchor="middle" font-size="' + size + '">' + esc(label) + "</text></svg>";
+  }
+
+  function renderCard() {
+    var p = state.profile;
+    var meta = [];
+    if (p.sex) meta.push(t(p.sex === "m" ? "sex_m" : "sex_f"));
+    if (p.bloodGroup && p.bloodGroup !== "unknown") meta.push(t("f_bg") + " " + p.bloodGroup);
+    if (p.phone) meta.push(p.phone);
+    if (p.email) meta.push(p.email);
+    var chips = p.types.map(function (ty) { return '<span class="tchip ' + ty + '">' + esc(typeName(ty)) + "</span>"; }).join("");
+    $("profile-box").innerHTML = badgeSvg(p.bloodGroup) +
+      '<div class="profile-body"><h2>' + esc(p.name || t("card_donor")) + "</h2>" +
+      (meta.length ? '<p class="profile-meta">' + meta.map(esc).join(" · ") + "</p>" : "") +
+      (chips ? '<div class="type-chips">' + chips + "</div>" : "") + "</div>";
+    $("profile-nudge").hidden = !!p.registered;
+    var ch = [t("ch_app")];
+    if (p.sms) ch.push(t("ch_sms"));
+    if (p.emailOn) ch.push(t("ch_email"));
+    $("profile-reminders").textContent = t("card_reminders", { list: ch.join(", ") }) + (p.sms || p.emailOn ? " · " + t("card_pilot") : "");
+    var needSex = !p.sex && (state.donations.some(function (d) { return d.type === "whole"; }) || p.types.indexOf("whole") >= 0 || !p.types.length);
+    $("sex-note").hidden = !needSex;
+    $("sex-note").textContent = t("sex_unknown_note", { f: RULES.whole.f.months });
+    var pb = $("profile-btn");
+    pb.textContent = p.registered ? t("btn_edit_profile") : t("btn_add_details");
+    pb.classList.toggle("btn-primary", !p.registered);
+
+    // Next donation
+    var s = status(), info = nextInfo(), due = info ? info.due : null;
     if (s.kind === "none") {
       $("next-date").textContent = t("not_set");
       $("next-rel").textContent = t("rel_none");
@@ -1978,41 +2469,45 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       $("next-rel").textContent = s.overdue === 0 ? t("rel_today") : t("rel_overdue", { n: s.overdue, unit: dayUnit(s.overdue) });
     } else {
       $("next-date").textContent = fmt(due);
-      $("next-rel").textContent = t("rel_wait", { n: s.left, unit: dayUnit(s.left), m: state.interval });
+      $("next-rel").textContent = t("rel_wait", { n: s.left, unit: dayUnit(s.left) });
     }
+    var basis = $("next-basis");
+    basis.hidden = !info;
+    if (info) basis.textContent = t("basis", { type: typeName(info.from.type, true), date: fmt(info.from.date) });
+
     $("ics-btn").disabled = !due;
     var g = $("gcal-btn");
-    if (due) { g.href = gcalUrl(due); g.removeAttribute("aria-disabled"); g.style.pointerEvents = ""; g.style.opacity = ""; }
+    if (due) { g.href = gcalUrl(info); g.removeAttribute("aria-disabled"); g.style.pointerEvents = ""; g.style.opacity = ""; }
     else { g.href = "#"; g.setAttribute("aria-disabled", "true"); g.style.pointerEvents = "none"; g.style.opacity = ".5"; }
     renderNotify();
+    $("notify-status").textContent = info ? t("notify_status_due", { every: everyText(info.iv), date: fmt(due) }) : t("notify_status_none");
 
-    var count = state.donations.length;
-    $("stat-count").textContent = count;
-    $("stat-helped").textContent = count * 3;
+    // Stats by type
+    var counts = { whole: 0, platelets: 0, plasma: 0 };
+    state.donations.forEach(function (d) { counts[d.type] = (counts[d.type] || 0) + 1; });
+    $("type-stats").innerHTML = '<div class="stat"><b>' + state.donations.length + "</b><span>" + esc(t("stat_total")) + "</span></div>" +
+      TYPES.map(function (ty) { return '<div class="stat"><b>' + counts[ty] + "</b><span>" + esc(typeName(ty)) + "</span></div>"; }).join("");
 
-    $("blood-types").innerHTML = BLOOD_GROUPS.map(function (b) {
-      return '<button type="button" aria-pressed="' + (state.bloodGroup === b) + '" data-bg="' + b + '">' + b + "</button>";
-    }).join("") + '<button type="button" class="unknown" aria-pressed="' + (state.bloodGroup === "unknown") + '" data-bg="unknown">' + esc(t("not_sure")) + "</button>";
-
+    // History
     var hist = $("history"), list = sortedDonations();
     if (!list.length) {
       hist.innerHTML = '<li class="empty">' + esc(t("history_empty")) + "</li>";
     } else {
       hist.innerHTML = list.map(function (d) {
-        return '<li><span class="h-date">' + esc(fmt(d.date)) + '</span><span class="h-where">' + esc(centreLabel(d.centre)) + "</span>" +
+        return '<li><span class="h-date">' + esc(fmt(d.date)) + "</span>" +
+          '<span class="h-mid"><span class="tchip ' + d.type + '">' + esc(typeName(d.type)) + '</span><span class="h-where">' + esc(centreLabel(d.centre)) + "</span></span>" +
           '<button class="icon-btn" type="button" data-remove="' + d.id + '" aria-label="' + esc(t("remove_aria", { date: fmt(d.date) })) + '">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>';
       }).join("");
     }
-    $("notify-status").textContent = due ? t("notify_status_due", { m: state.interval, date: fmt(due) }) : t("notify_status_none");
   }
 
   function renderNotify() {
     var btn = $("notify-btn"), label = $("notify-label");
     if (!("Notification" in window)) { btn.hidden = true; return; }
-    btn.hidden = false;
     var p;
     try { p = Notification.permission; } catch (e) { btn.hidden = true; return; }
+    btn.hidden = false;
     btn.disabled = p !== "default";
     label.textContent = p === "granted" ? t("notify_on") : p === "denied" ? t("notify_blocked") : t("notify_off");
   }
@@ -2030,18 +2525,18 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     out.push(cur);
     return out.join("\r\n");
   }
-  function buildICS(due, months) {
-    var now = new Date();
+  function rrule(iv) { return iv.months ? "RRULE:FREQ=MONTHLY;INTERVAL=" + iv.months : "RRULE:FREQ=WEEKLY;INTERVAL=" + Math.max(1, Math.round(iv.days / 7)); }
+  function buildICS(info) {
+    var due = info.due, now = new Date();
     var stamp = now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate()) + "T" + pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + pad(now.getUTCSeconds()) + "Z";
-    var end = compact(new Date(toUTC(due) + 86400000).toISOString().slice(0, 10));
     return [
       "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Zambia Blood Donor prototype//Blood donation reminder//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
       "BEGIN:VEVENT",
       "UID:znbts-donor-" + compact(due) + "-" + now.getTime() + "@znbts-donor",
       "DTSTAMP:" + stamp,
       "DTSTART;VALUE=DATE:" + compact(due),
-      "DTEND;VALUE=DATE:" + end,
-      "RRULE:FREQ=MONTHLY;INTERVAL=" + months,
+      "DTEND;VALUE=DATE:" + compact(addDays(due, 1)),
+      rrule(info.iv),
       "SUMMARY:" + icsEscape(t("n_title")),
       "DESCRIPTION:" + icsEscape(t("cal_desc")),
       "TRANSP:TRANSPARENT",
@@ -2049,26 +2544,20 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       "END:VEVENT", "END:VCALENDAR", ""
     ].map(foldLine).join("\r\n");
   }
-  function gcalUrl(due) {
-    var end = compact(new Date(toUTC(due) + 86400000).toISOString().slice(0, 10));
+  function gcalUrl(info) {
     return "https://calendar.google.com/calendar/render?action=TEMPLATE" +
       "&text=" + encodeURIComponent(t("n_title")) +
-      "&dates=" + compact(due) + "/" + end +
+      "&dates=" + compact(info.due) + "/" + compact(addDays(info.due, 1)) +
       "&details=" + encodeURIComponent(t("cal_desc")) +
-      "&recur=" + encodeURIComponent("RRULE:FREQ=MONTHLY;INTERVAL=" + state.interval);
+      "&recur=" + encodeURIComponent(rrule(info.iv));
   }
-  var FRAMED = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
-  if (FRAMED) {
-    document.documentElement.classList.add("framed");
-  }
-  var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   function downloadICS() {
-    var due = nextDue(); if (!due) return;
+    var info = nextInfo(); if (!info) return;
     if (IS_IOS) {
-      try { window.location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(buildICS(due, state.interval)); return; } catch (e) {}
+      try { window.location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(buildICS(info)); return; } catch (e) {}
     }
     try {
-      var blob = new Blob([buildICS(due, state.interval)], { type: "text/calendar;charset=utf-8" });
+      var blob = new Blob([buildICS(info)], { type: "text/calendar;charset=utf-8" });
       var url = URL.createObjectURL(blob);
       var a = document.createElement("a");
       a.href = url; a.download = "give-blood-reminder.ics";
@@ -2082,13 +2571,12 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 
   /* ---------------- Notifications ---------------- */
   function checkDue() {
-    var s = status();
-    if (s.kind !== "ready") return;
+    if (status().kind !== "ready") return;
     try { if (!("Notification" in window) || Notification.permission !== "granted") return; } catch (e) { return; }
     var td = todayISO();
     if (state.lastNotified === td) return;
     try {
-      var opts = { body: t("n_body", { m: state.interval }), tag: "znbts-due", lang: HTML_LANG[state.lang], icon: (document.querySelector('link[rel="apple-touch-icon"]') || {}).href };
+      var opts = { body: t("n_body"), tag: "znbts-due", lang: HTML_LANG[state.lang], icon: (document.querySelector('link[rel="apple-touch-icon"]') || {}).href };
       if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
         navigator.serviceWorker.getRegistration().then(function (reg) { if (reg) reg.showNotification(t("n_title"), opts); else new Notification(t("n_title"), opts); }).catch(function () {});
       } else new Notification(t("n_title"), opts);
@@ -2201,6 +2689,9 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     drawYou();
   }
 
+  function setLogType(type) { var r = $("lt-" + (TYPES.indexOf(type) >= 0 ? type : "whole")); if (r) r.checked = true; }
+  function logType() { for (var i = 0; i < TYPES.length; i++) if ($("lt-" + TYPES[i]).checked) return TYPES[i]; return "whole"; }
+
   function fillSelects(keep) {
     var near = $("near"), centre = $("log-centre"), date = $("log-date");
     var prevCentre = centre.value, prevDate = date.value;
@@ -2215,6 +2706,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       var u = userLoc();
       centre.value = u ? centresByDistance()[0].c.id : "lusaka";
       date.value = td;
+      setLogType(preferredType());
     }
   }
 
@@ -2231,18 +2723,95 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
       state = defaults(); state.lang = lang; save();
       fillSelects(false); renderAll(); renderClear(); drawYou();
       toast(t("t_cleared"));
+      location.hash = "#welcome";
     });
     $("clear-no").addEventListener("click", renderClear);
   }
 
-  function renderAll() { renderHome(); renderRemind(); renderFind(); }
+  function renderAll() { renderHome(); renderCard(); renderFind(); }
+
+  /* ---------------- Profile form ---------------- */
+  var formBg = "";
+  function renderBgChips() {
+    $("p-bg").innerHTML = BLOOD_GROUPS.map(function (b) {
+      return '<button type="button" aria-pressed="' + (formBg === b) + '" data-bg="' + b + '">' + b + "</button>";
+    }).join("") + '<button type="button" class="unknown" aria-pressed="' + (formBg === "unknown") + '" data-bg="unknown">' + esc(t("not_sure")) + "</button>";
+  }
+  function syncChecks() {
+    Array.prototype.forEach.call(document.querySelectorAll(".profile-form .check"), function (lab) {
+      var inp = lab.querySelector("input");
+      lab.classList.toggle("on", !!(inp && inp.checked));
+    });
+  }
+  function renderWelcomeText() {
+    var reg = state.profile.registered;
+    $("w-eyebrow").textContent = reg ? t("eyebrow_profile") : t("welcome_eyebrow");
+    $("w-title").textContent = reg ? t("prof_edit_title") : t("welcome_title");
+    $("p-save").textContent = reg ? t("btn_save_changes") : t("btn_save_profile");
+    $("p-skip").textContent = reg ? t("btn_cancel") : t("btn_skip");
+  }
+  function fillProfileForm() {
+    var p = state.profile;
+    $("p-name").value = p.name || "";
+    $("p-phone").value = p.phone || "";
+    $("p-email").value = p.email || "";
+    $("sex-m").checked = p.sex === "m";
+    $("sex-f").checked = p.sex === "f";
+    TYPES.forEach(function (ty) { $("pt-" + ty).checked = p.types.indexOf(ty) >= 0; });
+    $("ch-sms").checked = !!p.sms;
+    $("ch-email").checked = !!p.emailOn;
+    $("p-consent").checked = !!p.consent;
+    formBg = p.bloodGroup || "";
+    $("p-error").hidden = true;
+    renderBgChips(); syncChecks(); renderWelcomeText();
+  }
+  function formError(key, fieldId) {
+    var err = $("p-error");
+    err.textContent = t(key); err.hidden = false;
+    var f = $(fieldId);
+    if (f) { try { f.focus({ preventScroll: false }); } catch (e) { f.focus(); } }
+    return false;
+  }
+  $("profile-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    $("p-error").hidden = true;
+    var phoneRaw = $("p-phone").value.trim(), emailRaw = $("p-email").value.trim();
+    var phone = "", email = "";
+    if (phoneRaw) { phone = normPhone(phoneRaw); if (!phone) return formError("err_phone", "p-phone"); }
+    if (emailRaw) { if (!EMAIL_RE.test(emailRaw)) return formError("err_email", "p-email"); email = emailRaw; }
+    var sms = $("ch-sms").checked, em = $("ch-email").checked;
+    if (sms && !phone) return formError("err_need_phone", "p-phone");
+    if (em && !email) return formError("err_need_email", "p-email");
+    if ((sms || em) && !$("p-consent").checked) return formError("err_consent", "p-consent");
+    var p = state.profile, first = !p.registered;
+    p.name = $("p-name").value.trim().slice(0, 80);
+    p.phone = phone; p.email = email;
+    p.sex = $("sex-m").checked ? "m" : $("sex-f").checked ? "f" : "";
+    p.bloodGroup = formBg;
+    p.types = TYPES.filter(function (ty) { return $("pt-" + ty).checked; });
+    p.sms = sms; p.emailOn = em; p.consent = $("p-consent").checked;
+    p.registered = true; p.skipped = false;
+    state.lastNotified = "";
+    save();
+    if (first) setLogType(preferredType());
+    renderAll();
+    toast(t("t_profile_saved"));
+    location.hash = first ? "#home" : "#remind";
+  });
+  $("p-skip").addEventListener("click", function () {
+    if (state.profile.registered) { location.hash = "#remind"; return; }
+    state.profile.skipped = true; save(); renderAll();
+    location.hash = "#home";
+  });
+  $("profile-form").addEventListener("change", syncChecks);
 
   /* ---------------- Language ---------------- */
   function setLang(lang) {
     if (!I18N[lang]) return;
     state.lang = lang; save();
     applyStatic(); fillSelects(true); renderAll(); renderClear(); refreshPopups();
-    $("log-error").hidden = true;
+    renderBgChips(); renderWelcomeText();
+    $("log-error").hidden = true; $("p-error").hidden = true;
   }
   function openLangMenu(open) {
     var menu = $("lang-menu"), btn = $("lang-btn");
@@ -2258,8 +2827,8 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     openLangMenu($("lang-menu").hidden);
   });
   $("lang-menu").addEventListener("click", function (e) {
-    var tg = e.target && e.target.nodeType !== 1 ? e.target.parentNode : e.target;
-    var b = tg && tg.closest ? tg.closest("[data-lang]") : null;
+    var tg = elOf(e.target);
+    var b = tg ? tg.closest("[data-lang]") : null;
     if (!b) return;
     e.stopPropagation();
     var changed = b.getAttribute("data-lang") !== state.lang;
@@ -2278,25 +2847,27 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     if (e.key === "Escape" && !$("lang-menu").hidden) { openLangMenu(false); $("lang-btn").focus(); }
   });
   function outsideClose(e) {
-    var el = e.target;
-    if (el && el.nodeType !== 1) el = el.parentNode;
-    if (!$("lang-menu").hidden && !(el && el.closest && el.closest(".lang"))) openLangMenu(false);
+    var el = elOf(e.target);
+    if (!$("lang-menu").hidden && !(el && el.closest(".lang"))) openLangMenu(false);
   }
   if (window.PointerEvent) document.addEventListener("pointerdown", outsideClose);
   else { document.addEventListener("touchstart", outsideClose, { passive: true }); document.addEventListener("mousedown", outsideClose); }
 
   /* ---------------- Actions ---------------- */
-  function addDonation(date, centre) {
+  function addDonation(date, centre, type) {
     var td = todayISO();
     var err = $("log-error");
     err.hidden = true;
+    type = TYPES.indexOf(type) >= 0 ? type : "whole";
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) { err.textContent = t("err_date"); err.hidden = false; return false; }
     if (date > td) { err.textContent = t("err_future"); err.hidden = false; return false; }
     if (date < "1970-01-01") { err.textContent = t("err_year"); err.hidden = false; return false; }
     for (var i = 0; i < state.donations.length; i++) {
-      if (state.donations[i].date === date) { err.textContent = t("err_dup", { date: fmt(date) }); err.hidden = false; return false; }
+      if (state.donations[i].date === date && state.donations[i].type === type) {
+        err.textContent = t("err_dup", { type: typeName(type, true), date: fmt(date) }); err.hidden = false; return false;
+      }
     }
-    state.donations.push({ id: "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: date, centre: centre || "" });
+    state.donations.push({ id: "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: date, centre: centre || "", type: type });
     state.lastNotified = "";
     save(); renderAll();
     toast(t("t_saved", { date: fmt(nextDue()) }));
@@ -2318,7 +2889,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
   }
 
   /* ---------------- Routing ---------------- */
-  var VIEWS = ["home", "find", "remind", "info"];
+  var VIEWS = ["welcome", "home", "find", "remind", "info"];
   function route() {
     var h = (location.hash || "").replace("#", "");
     if (VIEWS.indexOf(h) < 0) h = "home";
@@ -2326,6 +2897,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (a) {
       if (a.getAttribute("data-view") === h) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
     });
+    if (h === "welcome") fillProfileForm();
     if (h === "find") {
       initMap();
       if (map) { setTimeout(function () { map.invalidateSize(); }, 30); setTimeout(function () { map.invalidateSize(); }, 400); }
@@ -2335,9 +2907,8 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 
   /* ---------------- Wire up ---------------- */
   document.addEventListener("click", function (e) {
-    var el = e.target;
-    if (el && el.nodeType !== 1) el = el.parentNode;
-    if (!el || !el.closest) return;
+    var el = elOf(e.target);
+    if (!el) return;
     var show = el.closest("[data-show]");
     if (show) { highlight(show.getAttribute("data-show"), true); return; }
     var rm = el.closest("[data-remove]");
@@ -2345,33 +2916,26 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     var bg = el.closest("[data-bg]");
     if (bg) {
       var v = bg.getAttribute("data-bg");
-      state.bloodGroup = state.bloodGroup === v ? "" : v; save(); renderRemind(); return;
+      formBg = formBg === v ? "" : v; renderBgChips(); return;
     }
     var act = el.closest("[data-act]");
     if (act && act.getAttribute("data-act") === "today") {
       var u = userLoc();
-      addDonation(todayISO(), u ? centresByDistance()[0].c.id : "");
+      addDonation(todayISO(), u ? centresByDistance()[0].c.id : "", preferredType());
     }
   });
 
   $("log-form").addEventListener("submit", function (e) {
     e.preventDefault();
-    addDonation($("log-date").value, $("log-centre").value);
+    addDonation($("log-date").value, $("log-centre").value, logType());
   });
   $("today-btn").addEventListener("click", function () {
     $("log-date").value = todayISO();
-    addDonation(todayISO(), $("log-centre").value);
-  });
-
-  Array.prototype.forEach.call(document.querySelectorAll('input[name="interval"]'), function (r) {
-    r.addEventListener("change", function () {
-      state.interval = Number(r.value); state.lastNotified = ""; save(); renderAll();
-      var due = nextDue();
-      toast(due ? t("t_moved", { date: fmt(due) }) : t("t_every", { m: state.interval }));
-    });
+    addDonation(todayISO(), $("log-centre").value, logType());
   });
 
   $("ics-btn").addEventListener("click", downloadICS);
+  $("copy-btn").addEventListener("click", copyLink);
 
   $("notify-btn").addEventListener("click", function () {
     if (!("Notification" in window)) return;
@@ -2397,7 +2961,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 
   $("locate").addEventListener("click", function () {
     var btn = $("locate");
-    if (!navigator.geolocation || (window.isSecureContext === false)) { toast(t("t_no_geo")); return; }
+    if (!navigator.geolocation || window.isSecureContext === false) { toast(t("t_no_geo")); return; }
     btn.disabled = true;
     navigator.geolocation.getCurrentPosition(function (pos) {
       btn.disabled = false;
@@ -2412,11 +2976,13 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 
   window.addEventListener("hashchange", route);
   window.addEventListener("orientationchange", function () { if (map) setTimeout(function () { map.invalidateSize(); }, 300); });
-  window.addEventListener("pageshow", function (e) { if (e.persisted) { renderAll(); } });
+  window.addEventListener("pageshow", function (e) { if (e.persisted) renderAll(); });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { renderAll(); checkDue(); } });
 
-  // Older saved locations used a plain-English label for GPS
-  if (state.loc && state.loc.label === "your location") { state.loc.label = "@you"; save(); }
+  // First visit: open the sign-up screen before anything else.
+  if (!state.profile.registered && !state.profile.skipped && (!location.hash || location.hash === "#home")) {
+    try { history.replaceState(null, "", "#welcome"); } catch (e) { location.hash = "#welcome"; }
+  }
 
   applyStatic();
   fillSelects(false);
@@ -2427,8 +2993,9 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
   setInterval(function () { renderHome(); checkDue(); }, 60 * 60 * 1000);
 
   // Exposed for testing only
-  window.__znbts = { addMonths: addMonths, daysBetween: daysBetween, buildICS: buildICS, status: status, setLang: setLang, I18N: I18N, state: function () { return state; } };
+  window.__znbts = { addMonths: addMonths, addDays: addDays, normPhone: normPhone, buildICS: buildICS, nextInfo: nextInfo, status: status, setLang: setLang, I18N: I18N, RULES: RULES, state: function () { return state; } };
 })();
+
 </script>
 </body>
 </html>
