@@ -7,6 +7,7 @@ An independent prototype of a blood donor app for Zambia, prepared for a pilot w
 Live site: https://zachlindeque-art.github.io/ZNBS-App-/
 
 ## What it does
+- **Language choice on the first screen**: English, Icibemba or Chinyanja
 - **Sign-up on first launch**: name, phone, email, sex, blood group, how the person donates, and reminder preferences (in the app, SMS, email) with consent
 - **Donor card**: profile, donation history by type (whole blood, platelets, plasma) and totals
 - **Next donation date** worked out from the donation type and sex:

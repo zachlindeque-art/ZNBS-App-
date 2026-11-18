@@ -1093,6 +1093,19 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 }
 
 /* ---------- Sign-up / profile ---------- */
+.lang-pick { display: grid; gap: 10px; padding: 16px; border-radius: var(--radius); background: var(--sunk); min-width: 0; }
+.lang-pick-label { font-size: .82rem; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+.lang-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.lang-options button {
+  display: grid; gap: 1px; justify-items: center; align-content: center; min-height: 58px; padding: 8px 6px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); cursor: pointer; text-align: center;
+  transition: background .15s, border-color .15s;
+}
+.lang-options button b { font-family: var(--font-display); font-stretch: 112%; font-weight: 800; font-size: 1rem; line-height: 1.15; }
+.lang-options button small { font-size: .74rem; color: var(--muted); }
+.lang-options button:hover { border-color: var(--accent-text); }
+.lang-options button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.lang-options button[aria-pressed="true"] small { color: var(--on-accent); opacity: .85; }
 .welcome { max-width: 760px; }
 .welcome-head { display: grid; gap: 8px; }
 .welcome-head p { color: var(--muted); max-width: 60ch; }
@@ -1222,6 +1235,14 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
 
   <!-- SIGN-UP / PROFILE -->
   <section class="view welcome" id="view-welcome" hidden aria-labelledby="w-title">
+    <div class="lang-pick" role="group" aria-labelledby="lang-pick-label">
+      <p class="lang-pick-label" id="lang-pick-label">Choose your language · Saleni ululimi · Sankhani chilankhulo</p>
+      <div class="lang-options">
+        <button type="button" data-pick-lang="en" lang="en" aria-pressed="true"><b>English</b><small>English</small></button>
+        <button type="button" data-pick-lang="bem" lang="bem" aria-pressed="false"><b>Icibemba</b><small>Bemba</small></button>
+        <button type="button" data-pick-lang="ny" lang="ny" aria-pressed="false"><b>Chinyanja</b><small>Nyanja</small></button>
+      </div>
+    </div>
     <div class="welcome-head">
       <p class="eyebrow" id="w-eyebrow" data-i18n="welcome_eyebrow">Welcome</p>
       <h1 id="w-title" data-i18n="welcome_title">Set up your donor card</h1>
@@ -2345,6 +2366,7 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
     Array.prototype.forEach.call(document.querySelectorAll("[data-i18n-aria]"), function (el) { el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria"))); });
     $("lang-code").textContent = t("code");
     Array.prototype.forEach.call(document.querySelectorAll("[data-lang]"), function (b) { b.setAttribute("aria-checked", String(b.getAttribute("data-lang") === state.lang)); });
+    Array.prototype.forEach.call(document.querySelectorAll("[data-pick-lang]"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-pick-lang") === state.lang)); });
     TYPES.forEach(function (ty) {
       $("pt-" + ty + "-rule").textContent = ruleText(ty);
       $("often-" + ty).textContent = ruleText(ty);
@@ -2909,6 +2931,12 @@ label.field, .field { display: grid; gap: 6px; font-weight: 600; font-size: .9re
   document.addEventListener("click", function (e) {
     var el = elOf(e.target);
     if (!el) return;
+    var pick = el.closest("[data-pick-lang]");
+    if (pick) {
+      var lang = pick.getAttribute("data-pick-lang");
+      if (lang !== state.lang) { setLang(lang); toast(t("lang_set")); }
+      return;
+    }
     var show = el.closest("[data-show]");
     if (show) { highlight(show.getAttribute("data-show"), true); return; }
     var rm = el.closest("[data-remove]");
