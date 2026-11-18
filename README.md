@@ -1,4 +1,6 @@
-# Zambia Blood Donor (proof of concept)
+# Pulumutsa Moyo (proof of concept)
+
+*Pulumutsa Moyo* means "Save a life" in Nyanja.
 
 An independent prototype of a blood donor app for Zambia, prepared for a pilot with the Zambia National Blood Transfusion Service (ZNBTS). It is not yet an official ZNBTS app.
 
