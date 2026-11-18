@@ -76,7 +76,7 @@ var I18N = {
     find_intro: "ZNBTS has a blood centre in every province. In Lusaka it's at UTH on Nationalist Road. Pick your town, or use your location, to see the closest one first.",
     btn_locate: "Use my location", or: "or", choose_town: "Choose your town",
     map_aria: "Map of ZNBTS blood centres",
-    list_note: "Outside Lusaka, pins mark the town, not the building. Phone ahead before a long trip.",
+    list_note: "Where we know the building, the pin sits on it. Otherwise it marks the town. Phone ahead before a long trip.",
     hq: "Headquarters", show_on_map: "Show on map",
     prov_line: "{town}, {prov} Province",
     drives_title: "Mobile blood drives",
@@ -85,7 +85,7 @@ var I18N = {
     map_offline: "The map needs an internet connection. The list of centres still works.",
 
     remind_title: "My donor card",
-    remind_intro: "Your details, your donations and your next date to give.",
+    remind_intro: "Log each donation here and we'll work out your next date.",
     card_donor: "Donor",
     card_no_profile: "Add your details so we can set the right reminder for you.",
     card_reminders: "Reminders: {list}",
@@ -149,7 +149,7 @@ var I18N = {
     k3: "Are pregnant or have recently given birth",
     k4: "Had a tattoo, piercing, surgery or a transfusion recently", k5: "Take regular medication",
     about_h: "About this app",
-    about_p: "Pulumutsa Moyo is an independent prototype, built for a pilot with the Zambia National Blood Transfusion Service (ZNBTS). It isn't an official ZNBTS app yet. The donation rules and health advice come from public sources, and ZNBTS staff will check them before launch. The Lusaka pin sits at UTH; the others mark the town. Everything you enter stays on this phone.",
+    about_p: "Pulumutsa Moyo is an independent prototype, built for a pilot with the Zambia National Blood Transfusion Service (ZNBTS). It isn't an official ZNBTS app yet. The donation rules and health advice come from public sources, and ZNBTS staff will check them before launch. The pins for Lusaka and Kitwe sit on the hospital; the others mark the town. Everything you enter stays on this phone.",
 
     t_saved: "Saved. Next donation: {date}.", t_removed: "Removed {date}.", t_undo: "Undo",
     t_ics_ok: "Reminder file saved. Open it to add it to your calendar.",
@@ -196,7 +196,8 @@ var I18N = {
     ci_next: "Next",
     ci_none: "None yet",
     ci_scan: "Scan to find a blood centre",
-    ci_note: "Independent prototype · not an official ZNBTS card"
+    ci_note: "Independent prototype · not an official ZNBTS card",
+    pin_town: "Pin shows the town"
   },
 
   bem: {
@@ -272,7 +273,7 @@ var I18N = {
     find_intro: "ZNBTS ilikwata icifulo ca mulopa mu province yonse. Mu Lusaka cili ku UTH pa Nationalist Road. Saleni itauni yenu, nangu bomfyeni apo muli, pa kumona icipalamipo intanshi.",
     btn_locate: "Bomfya apo ndi", or: "nangu", choose_town: "Saleni itauni yenu",
     map_aria: "Mapu ya fifulo fya mulopa fya ZNBTS",
-    list_note: "Ukufuma mu Lusaka, ifishibilo filelanga itauni, te ng'anda iine. Tumeni foni intanshi ilyo tamulaenda ulwendo ulutali.",
+    list_note: "Apo twaishiba ing'anda, icishibilo cili pali yene. Nga tatwaishiba, cilelanga itauni. Tumeni foni intanshi ilyo tamulaenda ulwendo ulutali.",
     hq: "Icifulo cikalamba", show_on_map: "Langeni pa mapu",
     prov_line: "{town}, {prov} Province",
     drives_title: "Ukulonganika umulopa ukwa kwenda",
@@ -281,7 +282,7 @@ var I18N = {
     map_offline: "Mapu ilefwaya intaneti. Ilisiti lya fifulo lilabomba.",
 
     remind_title: "Ikadi lyandi ilya kupeela umulopa",
-    remind_intro: "Ifyenu, ukupeela kwenu, no bushiku bwa kupeela na kabili.",
+    remind_intro: "Lembeni cila lyo mwapeela pano, kabili tukapenda ubushiku bwenu ubukonkapo.",
     card_donor: "Umupeela wa mulopa",
     card_no_profile: "Lembeni ifyenu pa kuti tubike ukucibukisha ukwalungama.",
     card_reminders: "Ukucibukisha: {list}",
@@ -345,7 +346,7 @@ var I18N = {
     k3: "Muli ne fumo nangu mwafyala nomba line",
     k4: "Mwalembele tattoo, mwatobwele umubili, mwalepulwa (opareshoni) nangu mwapokele umulopa nomba line", k5: "Mulanwa umuti lyonse",
     about_h: "Pali iyi app",
-    about_p: "Pulumutsa Moyo ni app ya kwesha (prototype), iyapangilwe ukwesha (pilot) pamo na Zambia National Blood Transfusion Service (ZNBTS). Tailaba app ya ZNBTS iya cine cine. Amafunde ya kupeela umulopa ne fya bumi fyafuma ku fifulo fya pa intaneti, kabili abakalamba ba ZNBTS bakafipima ilyo tabalaisula. Icishibilo ca Lusaka cili ku UTH; ifyashala filelanga itauni. Fyonse ifyo mulemba fishala pali iyi foni.",
+    about_p: "Pulumutsa Moyo ni app ya kwesha (prototype), iyapangilwe ukwesha (pilot) pamo na Zambia National Blood Transfusion Service (ZNBTS). Tailaba app ya ZNBTS iya cine cine. Amafunde ya kupeela umulopa ne fya bumi fyafuma ku fifulo fya pa intaneti, kabili abakalamba ba ZNBTS bakafipima ilyo tabalaisula. Ifishibilo fya Lusaka na Kitwe fili pa cipatala; ifyashala filelanga itauni. Fyonse ifyo mulemba fishala pali iyi foni.",
 
     t_saved: "Fyasungwa. Ukupeela ukukonkapo: {date}.", t_removed: "Mwafumya {date}.", t_undo: "Bwekeshapo",
     t_ics_ok: "Ifaelo lya kucibukisha lyasungwa. Lyisuleni pa kulibika pa kalenda yenu.",
@@ -392,7 +393,8 @@ var I18N = {
     ci_next: "Ukukonkapo",
     ci_none: "Tapali",
     ci_scan: "Scan pa kufwaya icifulo ca mulopa",
-    ci_note: "Ya kwesha fye · te kadi lya ZNBTS"
+    ci_note: "Ya kwesha fye · te kadi lya ZNBTS",
+    pin_town: "Icishibilo cilelanga itauni fye"
   },
 
   ny: {
@@ -468,7 +470,7 @@ var I18N = {
     find_intro: "ZNBTS ili ndi malo operekera magazi m'chigawo chilichonse. Ku Lusaka ali ku UTH pa Nationalist Road. Sankhani tauni yanu, kapena gwiritsani ntchito komwe muli, kuti muone malo apafupi kwambiri poyamba.",
     btn_locate: "Gwiritsani ntchito komwe ndili", or: "kapena", choose_town: "Sankhani tauni yanu",
     map_aria: "Mapu a malo operekera magazi a ZNBTS",
-    list_note: "Kunja kwa Lusaka, zizindikiro zikuonetsa tauni, osati nyumba yeniyeni. Imbani foni kaye musanayende ulendo wautali.",
+    list_note: "Kumene tikudziwa nyumba, chizindikiro chili pamenepo. Kwina chikuonetsa tauni. Imbani foni kaye musanayende ulendo wautali.",
     hq: "Likulu", show_on_map: "Onetsani pa mapu",
     prov_line: "{town}, chigawo cha {prov}",
     drives_title: "Kusonkhanitsa magazi koyendayenda",
@@ -477,7 +479,7 @@ var I18N = {
     map_offline: "Mapu akufunika intaneti. Mndandanda wa malo ukugwirabe ntchito.",
 
     remind_title: "Khadi langa la wopereka magazi",
-    remind_intro: "Zambiri zanu, kupereka kwanu, ndi tsiku lotsatira lopereka.",
+    remind_intro: "Lembani kupereka kulikonse pano ndipo tidzawerengera tsiku lanu lotsatira.",
     card_donor: "Wopereka magazi",
     card_no_profile: "Onjezani zambiri zanu kuti tikhazikitse chikumbutso choyenera.",
     card_reminders: "Zikumbutso: {list}",
@@ -541,7 +543,7 @@ var I18N = {
     k3: "Muli ndi pakati kapena mwabereka posachedwa",
     k4: "Munajambula tattoo, kuboola thupi, kuchitidwa opaleshoni kapena kulandira magazi posachedwa", k5: "Mumamwa mankhwala nthawi zonse",
     about_h: "Za pulogalamuyi",
-    about_p: "Pulumutsa Moyo ndi pulogalamu yoyesera (prototype) yopangidwa paokha, yokonzekera pulogalamu yoyesera (pilot) pamodzi ndi Zambia National Blood Transfusion Service (ZNBTS). Si pulogalamu yovomerezeka ya ZNBTS pakadali pano. Malamulo a kupereka magazi ndi malangizo a zaumoyo zachokera pa intaneti, ndipo ogwira ntchito a ZNBTS adzaziyang'ana isanatulutsidwe. Chizindikiro cha Lusaka chili ku UTH; zina zikuonetsa tauni. Zonse zimene mumalemba zimakhala pa foni iyi.",
+    about_p: "Pulumutsa Moyo ndi pulogalamu yoyesera (prototype) yopangidwa paokha, yokonzekera pulogalamu yoyesera (pilot) pamodzi ndi Zambia National Blood Transfusion Service (ZNBTS). Si pulogalamu yovomerezeka ya ZNBTS pakadali pano. Malamulo a kupereka magazi ndi malangizo a zaumoyo zachokera pa intaneti, ndipo ogwira ntchito a ZNBTS adzaziyang'ana isanatulutsidwe. Zizindikiro za Lusaka ndi Kitwe zili pa chipatala; zina zikuonetsa tauni. Zonse zimene mumalemba zimakhala pa foni iyi.",
 
     t_saved: "Zasungidwa. Kupereka kotsatira: {date}.", t_removed: "Mwachotsa {date}.", t_undo: "Bwezerani",
     t_ics_ok: "Fayilo ya chikumbutso yasungidwa. Itsegulani kuti muiike pa kalendala yanu.",
@@ -588,7 +590,8 @@ var I18N = {
     ci_next: "Kotsatira",
     ci_none: "Palibe",
     ci_scan: "Sikanani kuti mupeze malo a magazi",
-    ci_note: "Yoyesera chabe · si khadi la ZNBTS"
+    ci_note: "Yoyesera chabe · si khadi la ZNBTS",
+    pin_town: "Chizindikiro chikuonetsa tauni yokha"
   }
 };
 

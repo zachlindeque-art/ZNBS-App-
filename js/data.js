@@ -15,13 +15,15 @@ var RULES = {
 var TYPES = ["whole", "platelets", "plasma"];
 
 // One ZNBTS blood centre per province.
-// Lusaka is placed at UTH on Nationalist Road, where the provincial centre and ZNBTS head office sit.
-// The phone number is the head office line published in 2015, still to be confirmed.
-// The other pins mark the town, not the building, until ZNBTS confirms addresses.
+// exact: true means the pin sits on the building. Otherwise it marks the town.
+// Lusaka: UTH, Nationalist Road (ZNBTS 2015 report, PAMJ 2020 study). Phone is the 2015 head office line.
+// Kitwe: the Copperbelt blood bank at Kitwe Teaching Hospital, formerly Kitwe Central Hospital.
+// Kabwe: listed at Kabwe General Hospital in a business directory. Ask ZNBTS to confirm.
+// The rest still need addresses and phone numbers from ZNBTS.
 var CENTRES = [
   { id: "lusaka",  name: "Lusaka Provincial Blood Transfusion Centre", town: "Lusaka", province: "Lusaka", place: "UTH grounds, Nationalist Road", phone: "+260 211 257118", lat: -15.4321, lng: 28.3137, hq: true, exact: true },
-  { id: "kitwe",   name: "Copperbelt Regional Blood Centre", town: "Kitwe", province: "Copperbelt", lat: -12.8024, lng: 28.2132 },
-  { id: "kabwe",   name: "Central Provincial Blood Centre", town: "Kabwe", province: "Central", lat: -14.4469, lng: 28.4464 },
+  { id: "kitwe",   name: "Copperbelt Provincial Blood Bank", town: "Kitwe", province: "Copperbelt", place: "Kitwe Teaching Hospital, Kuomboka Drive", lat: -12.7978, lng: 28.2102, exact: true },
+  { id: "kabwe",   name: "Central Provincial Blood Centre", town: "Kabwe", province: "Central", place: "Kabwe General Hospital", lat: -14.4469, lng: 28.4464 },
   { id: "chipata", name: "Eastern Provincial Blood Centre", town: "Chipata", province: "Eastern", lat: -13.6445, lng: 32.6447 },
   { id: "mansa",   name: "Luapula Provincial Blood Centre", town: "Mansa", province: "Luapula", lat: -11.1998, lng: 28.8943 },
   { id: "chinsali",name: "Muchinga Provincial Blood Centre", town: "Chinsali", province: "Muchinga", lat: -10.5414, lng: 32.0816 },

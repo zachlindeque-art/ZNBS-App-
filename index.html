@@ -4,28 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pulumutsa Moyo</title>
-<meta name="description" content="Pulumutsa Moyo (Save a life): an independent prototype for a ZNBTS pilot. Donor card, blood centre map and reminders for whole blood, platelets and plasma. English, Icibemba, Chinyanja.">
+<meta name="description" content="Pulumutsa Moyo (Save a life): find a blood centre in Zambia, keep a donor card and get reminded when you can give again. English, Icibemba, Chinyanja.">
 <meta name="theme-color" content="#B0142F">
 <meta name="format-detection" content="telephone=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pulumutsa Moyo">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,600..900&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="css/leaflet.css">
 <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
-
-<noscript><div class="noscript">This app needs JavaScript. On an iPhone, a downloaded file opens in a preview that can't run apps. Open the app from its web link in Safari or Chrome instead.</div></noscript>
+<body data-page="home">
+<noscript><div class="noscript">Pulumutsa Moyo needs JavaScript for the map, reminders and donor card. Turn it on in your browser settings.</div></noscript>
 <header class="topbar">
   <div class="topbar-inner">
-    <a class="brand" href="#home" aria-label="Pulumutsa Moyo">
+    <a class="brand" href="index.html" aria-label="Pulumutsa Moyo">
       <svg class="brand-mark" viewBox="0 0 30 36" aria-hidden="true">
         <path d="M15 1.5C15 1.5 3 15.2 3 23.2A12 12 0 0 0 27 23.2C27 15.2 15 1.5 15 1.5Z" fill="var(--accent)"/>
         <path d="M15 17v12M9 23h12" stroke="var(--on-accent)" stroke-width="3" stroke-linecap="round"/>
@@ -33,16 +30,14 @@
       <span class="brand-text"><b>Pulumutsa Moyo</b><small data-i18n="brand_sub">Blood donor app · independent prototype, not official ZNBTS</small></span>
     </a>
     <nav class="tabs" aria-label="Main">
-      <a href="#home" data-view="home" data-i18n="nav_home">Home</a>
-      <a href="#find" data-view="find" data-i18n="nav_find">Find a centre</a>
-      <a href="#remind" data-view="remind" data-i18n="nav_remind">Donor card</a>
-      <a href="#info" data-view="info" data-i18n="nav_info">Before you donate</a>
+      <a href="index.html" aria-current="page" data-i18n="nav_home">Home</a>
+      <a href="find.html" data-i18n="nav_find">Find a centre</a>
+      <a href="card.html" data-i18n="nav_remind">Donor card</a>
+      <a href="info.html" data-i18n="nav_info">Before you donate</a>
     </nav>
     <div class="lang">
       <button class="lang-btn" id="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="lang-menu" data-i18n-aria="lang_label" aria-label="Language">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/>
-        </svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>
         <span id="lang-code">EN</span>
       </button>
       <div class="lang-menu" id="lang-menu" role="menu" aria-labelledby="lang-btn" hidden>
@@ -65,405 +60,141 @@
 </header>
 
 <main id="main">
+<div class="view">
+<div class="banner" id="ready-banner" hidden>
+  <span data-i18n-html="banner_html"><b>You can give blood again.</b> Your reminder date has arrived.</span>
+  <a class="btn btn-sm btn-primary" href="find.html" data-i18n="btn_find">Find a centre</a>
+</div>
 
-  <!-- SIGN-UP / PROFILE -->
-  <section class="view welcome" id="view-welcome" hidden aria-labelledby="w-title">
-    <div class="lang-pick" role="group" aria-labelledby="lang-pick-label">
-      <p class="lang-pick-label" id="lang-pick-label">Choose your language · Saleni ululimi · Sankhani chilankhulo</p>
-      <div class="lang-options">
-        <button type="button" data-pick-lang="en" lang="en" aria-pressed="true"><b>English</b><small>English</small></button>
-        <button type="button" data-pick-lang="bem" lang="bem" aria-pressed="false"><b>Icibemba</b><small>Bemba</small></button>
-        <button type="button" data-pick-lang="ny" lang="ny" aria-pressed="false"><b>Chinyanja</b><small>Nyanja</small></button>
+<div class="home-grid">
+  <div class="main-col">
+    <section class="status" aria-labelledby="st-title">
+      <div class="status-copy">
+        <p class="eyebrow" id="st-eyebrow" data-i18n="eyebrow_next">Your next donation</p>
+        <h1 id="st-title" data-i18n="ready_title">You can give blood today</h1>
+        <p class="lead" id="st-lead">When you give, log it here. We'll count the days and tell you when your body is ready again.</p>
+        <div class="btn-row" id="st-actions"><a class="btn btn-primary" href="find.html" data-i18n="btn_find">Find a centre</a><a class="btn" href="card.html" data-i18n="btn_log_past">Log a past donation</a></div>
       </div>
-    </div>
-    <div class="welcome-head">
-      <p class="eyebrow" id="w-eyebrow" data-i18n="welcome_eyebrow">Welcome</p>
-      <h1 id="w-title" data-i18n="welcome_title">Set up your donor card</h1>
-      <p id="w-intro" data-i18n="welcome_intro">It takes two minutes. We use it to work out when your body is ready to give again, and to remind you.</p>
-    </div>
-    <form class="panel profile-form" id="profile-form" novalidate>
-      <div class="form-section">
-        <h2 data-i18n="f_about">About you</h2>
-        <div class="form-grid">
-          <label class="field full" for="p-name"><span><span data-i18n="f_name">Your name</span> <small class="hint" data-i18n="f_optional">Optional</small></span>
-            <input class="input" id="p-name" type="text" autocomplete="name" maxlength="80">
-          </label>
-          <label class="field" for="p-phone"><span data-i18n="f_phone">Phone number</span>
-            <input class="input" id="p-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="097 123 4567">
-          </label>
-          <label class="field" for="p-email"><span data-i18n="f_email">Email address</span>
-            <input class="input" id="p-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" placeholder="name@example.com">
-          </label>
-        </div>
-        <fieldset class="fs">
-          <legend data-i18n="f_sex">Sex</legend>
-          <div class="segmented">
-            <label><input type="radio" name="sex" id="sex-m" value="m"><span data-i18n="sex_m">Male</span></label>
-            <label><input type="radio" name="sex" id="sex-f" value="f"><span data-i18n="sex_f">Female</span></label>
-          </div>
-          <p class="hint" id="sex-hint">Men can give whole blood every 3 months and women every 4 months, so this sets your reminder.</p>
-        </fieldset>
-        <div class="field" role="group" aria-labelledby="bg-label">
-          <span id="bg-label" data-i18n="f_bg">Blood group</span>
-          <div class="blood-types" id="p-bg"></div>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <h2 data-i18n="f_types">What do you give?</h2>
-        <p class="hint" data-i18n="f_types_hint">Choose all that apply. You can change this later.</p>
-        <div class="checks">
-          <label class="check" for="pt-whole"><input type="checkbox" id="pt-whole"><span><span data-i18n="type_whole">Whole blood</span><small id="pt-whole-rule">Men every 3 months, women every 4 months</small></span></label>
-          <label class="check" for="pt-platelets"><input type="checkbox" id="pt-platelets"><span><span data-i18n="type_platelets">Platelets</span><small id="pt-platelets-rule">Every 2 weeks</small></span></label>
-          <label class="check" for="pt-plasma"><input type="checkbox" id="pt-plasma"><span><span data-i18n="type_plasma">Plasma</span><small id="pt-plasma-rule">Every 2 weeks</small></span></label>
-        </div>
-      </div>
-
-      <div class="form-section">
-        <h2 data-i18n="f_channels">How should we reach you?</h2>
-        <div class="checks">
-          <label class="check on locked" for="ch-app"><input type="checkbox" id="ch-app" checked disabled><span><span data-i18n="ch_app">In this app</span><small data-i18n="ch_app_hint">Always on</small></span></label>
-          <label class="check" for="ch-sms"><input type="checkbox" id="ch-sms"><span><span data-i18n="ch_sms">SMS</span><small data-i18n="ch_sms_hint">To your phone</small></span></label>
-          <label class="check" for="ch-email"><input type="checkbox" id="ch-email"><span><span data-i18n="ch_email">Email</span><small data-i18n="ch_email_hint">To your inbox</small></span></label>
-        </div>
-        <label class="check consent" for="p-consent"><input type="checkbox" id="p-consent"><span data-i18n="f_consent">I agree that ZNBTS may send me reminders and blood drive news by SMS or email. I can stop at any time.</span></label>
-        <p class="pilot-note" data-i18n="pilot_note">SMS and email reminders start when the ZNBTS pilot launches. Until then, your details stay on this phone only.</p>
-      </div>
-
-      <div class="form-actions">
-        <p class="err" id="p-error" role="alert" hidden></p>
-        <div class="btn-row">
-          <button class="btn btn-primary" type="submit" id="p-save">Save and continue</button>
-          <button class="btn btn-quiet" type="button" id="p-skip">Skip for now</button>
-        </div>
-      </div>
-    </form>
-  </section>
-
-  <!-- HOME -->
-  <section class="view" id="view-home" aria-labelledby="st-title">
-    <div class="banner" id="ready-banner" hidden>
-      <span data-i18n-html="banner_html"><b>You can give blood again.</b> Your reminder date has arrived.</span>
-      <a class="btn btn-sm btn-primary" href="#find" data-i18n="btn_find">Find a centre</a>
-    </div>
-
-    <div class="home-grid">
-      <div class="main-col">
-      <div class="status">
-        <div class="status-copy">
-          <p class="eyebrow" id="st-eyebrow">Your next donation</p>
-          <h1 id="st-title">Ready when you are</h1>
-          <p class="lead" id="st-lead">Give blood, log it on your donor card, and we'll remind you when you can give again.</p>
-          <div class="btn-row" id="st-actions"></div>
-        </div>
-        <figure class="bag" aria-hidden="true">
-          <svg viewBox="0 0 146 180">
-            <defs>
-              <clipPath id="bag-clip"><rect x="14" y="36" width="92" height="118" rx="20"/></clipPath>
-            </defs>
-            <circle cx="60" cy="9" r="5" class="bag-neck"/>
-            <path class="bag-neck" d="M49 36V22a4 4 0 0 1 4-4h14a4 4 0 0 1 4 4v14"/>
-            <rect class="bag-body" x="14" y="36" width="92" height="118" rx="20"/>
-            <rect class="bag-fill" id="bag-fill" x="14" y="36" width="92" height="118" clip-path="url(#bag-clip)"/>
-            <g clip-path="url(#bag-clip)">
-              <line class="bag-tick" x1="92" x2="106" y1="75.3" y2="75.3"/>
-              <line class="bag-tick" x1="92" x2="106" y1="114.7" y2="114.7"/>
-            </g>
-            <text class="bag-tick-label" x="110" y="78.3">300</text>
-            <text class="bag-tick-label" x="110" y="117.7">150</text>
-            <text class="bag-tick-label" x="110" y="43">450 ml</text>
-            <text class="bag-text" id="bag-text" x="60" y="104" text-anchor="middle">100%</text>
-            <path class="bag-tube" d="M60 154v14q0 8 8 8h14"/>
-          </svg>
-          <figcaption id="bag-cap">Full and ready</figcaption>
-        </figure>
-      </div>
-
-      <div class="panel invite">
-        <div class="invite-copy">
-          <h2 data-i18n="invite_title">Don't come alone</h2>
-          <p class="muted" data-i18n="invite_text">Ask a friend to come with you next time. The first time is easier with someone you know, and one unit can save up to three lives.</p>
-        </div>
-        <div class="btn-row">
-          <a class="btn btn-primary" id="wa-btn" href="https://wa.me/" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5z"/></svg>
-            <span data-i18n="btn_whatsapp">Share on WhatsApp</span>
-          </a>
-          <button class="btn" type="button" id="copy-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
-            <span data-i18n="btn_copy">Copy link</span>
-          </button>
-        </div>
-      </div>
-      </div>
-
-      <div class="side">
-        <div class="panel nudge" id="home-nudge" hidden>
-          <p class="eyebrow" data-i18n="nav_remind">Donor card</p>
-          <p class="near-name" data-i18n="welcome_title">Set up your donor card</p>
-          <p class="near-meta" data-i18n="nudge_text">Add your details and how you donate so your reminder uses the right waiting time.</p>
-          <div class="btn-row"><a class="btn btn-sm btn-primary" href="#welcome" data-i18n="btn_add_details">Add my details</a></div>
-        </div>
-
-        <div class="panel near-card">
-          <div class="panel-head"><p class="eyebrow" data-i18n="eyebrow_nearest">Nearest centre</p><span class="chip" id="near-dist" hidden></span></div>
-          <div id="near-body"><p class="near-name">Find the blood centre closest to you</p><p class="near-meta">There is a ZNBTS centre in every province.</p></div>
-          <div class="btn-row">
-            <a class="btn btn-sm" href="#find" id="near-btn">Open the map</a>
-            <a class="btn btn-sm btn-quiet" id="near-dir" href="#" target="_blank" rel="noopener" data-i18n="btn_directions" hidden>Directions</a>
-          </div>
-        </div>
-
-        <div class="panel visit">
-          <h2 class="visit-title" data-i18n="visit_title">Your visit, about an hour</h2>
-          <ol class="visit-steps">
-            <li><span class="v-num" aria-hidden="true">1</span><div><p class="v-head"><b data-i18n="v1_t">Sign in</b><span class="v-min" id="v1-min">5–10 min</span></p><p class="v-desc" data-i18n="v1_d">Show your NRC and fill in a short form.</p></div></li>
-            <li><span class="v-num" aria-hidden="true">2</span><div><p class="v-head"><b data-i18n="v2_t">Quick check</b><span class="v-min" id="v2-min">10–15 min</span></p><p class="v-desc" data-i18n="v2_d">Weight, blood pressure and a finger prick for iron.</p></div></li>
-            <li class="v-give"><span class="v-num" aria-hidden="true">3</span><div><p class="v-head"><b data-i18n="v3_t">Give</b><span class="v-min" id="v3-min">about 10 min</span></p><p class="v-desc" data-i18n="v3_d">About 450 ml. You'll feel a quick pinch at the start.</p></div></li>
-            <li><span class="v-num" aria-hidden="true">4</span><div><p class="v-head"><b data-i18n="v4_t">Rest and snack</b><span class="v-min" id="v4-min">10–15 min</span></p><p class="v-desc" data-i18n="v4_d">Sit for a while and have the drink and snack they give you.</p></div></li>
-          </ol>
-        </div>
-      </div>
-    </div>
-
-    <section class="panel where" aria-labelledby="where-title">
-      <div class="where-big">
-        <b>40%</b>
-        <span data-i18n="where_mothers">Pregnant women with complications</span>
-      </div>
-      <div class="where-detail">
-        <h2 id="where-title" data-i18n="where_title">Where your blood goes</h2>
-        <p class="muted" data-i18n="where_lead">Most of it goes to mothers and young children.</p>
-        <div class="share-bar" role="img" data-i18n-aria="where_aria" aria-label="40% to pregnant women with complications, 20% to children under five, 40% to everyone else">
-          <span class="seg mothers" style="width:40%"></span><span class="seg children" style="width:20%"></span><span class="seg others" style="width:40%"></span>
-        </div>
-        <ul class="share-legend">
-          <li><i class="sw mothers"></i><b>40%</b><span data-i18n="where_mothers">Pregnant women with complications</span></li>
-          <li><i class="sw children"></i><b>20%</b><span data-i18n="where_children">Children under five</span></li>
-          <li><i class="sw others"></i><b>40%</b><span data-i18n="where_others">Everyone else: sickle cell, cancer, surgery and accidents</span></li>
-        </ul>
-        <p class="source" data-i18n="where_src">Figures from ZNBTS, shared during the Ama Hero donor campaign.</p>
-      </div>
+      <figure class="bag" aria-hidden="true">
+        <svg viewBox="0 0 146 180">
+          <defs><clipPath id="bag-clip"><rect x="14" y="36" width="92" height="118" rx="20"/></clipPath></defs>
+          <circle cx="60" cy="9" r="5" class="bag-neck"/>
+          <path class="bag-neck" d="M49 36V22a4 4 0 0 1 4-4h14a4 4 0 0 1 4 4v14"/>
+          <rect class="bag-body" x="14" y="36" width="92" height="118" rx="20"/>
+          <rect class="bag-fill" id="bag-fill" x="14" y="36" width="92" height="118" clip-path="url(#bag-clip)"/>
+          <g clip-path="url(#bag-clip)">
+            <line class="bag-tick" x1="92" x2="106" y1="75.3" y2="75.3"/>
+            <line class="bag-tick" x1="92" x2="106" y1="114.7" y2="114.7"/>
+          </g>
+          <text class="bag-tick-label" x="110" y="78.3">300</text>
+          <text class="bag-tick-label" x="110" y="117.7">150</text>
+          <text class="bag-tick-label" x="110" y="43">450 ml</text>
+          <text class="bag-text" id="bag-text" x="60" y="104" text-anchor="middle">100%</text>
+          <path class="bag-tube" d="M60 154v14q0 8 8 8h14"/>
+        </svg>
+        <figcaption id="bag-cap" data-i18n="cap_full">Topped up</figcaption>
+      </figure>
     </section>
 
-    <div class="panel">
-      <div class="panel-head"><h2 data-i18n="goal_title">Zambia's blood goal</h2><span class="chip" data-i18n="goal_chip">Units per year</span></div>
-      <p class="muted" data-i18n="goal_text">Zambia collected 130,000 units in 2023. ZNBTS's Ama Hero campaign is aiming for 400,000 a year by 2026. Every regular donor moves the first bar.</p>
-      <div class="goal-bars">
-        <div class="goal-row">
-          <div class="goal-label"><span data-i18n="goal_collected">Collected in 2023</span><span class="mono">130,000</span></div>
-          <div class="goal-track"><div class="goal-bar" style="width:32.5%"></div></div>
-        </div>
-        <div class="goal-row">
-          <div class="goal-label"><span data-i18n="goal_target">Target for 2026</span><span class="mono">400,000</span></div>
-          <div class="goal-track"><div class="goal-bar target" style="width:100%"></div></div>
-        </div>
+    <section class="invite" aria-labelledby="invite-title">
+      <div class="invite-copy">
+        <h2 id="invite-title" data-i18n="invite_title">Don't come alone</h2>
+        <p data-i18n="invite_text">Ask a friend to come with you next time. The first time is easier with someone you know, and one unit can save up to three lives.</p>
       </div>
-      <p class="source" data-i18n="goal_src">Source: Presidential Delivery Unit and ZNBTS.</p>
-    </div>
-  </section>
-
-  <!-- FIND -->
-  <section class="view" id="view-find" hidden aria-labelledby="find-title">
-    <div class="find-head">
-      <h1 id="find-title" data-i18n="find_title">Find a blood centre</h1>
-      <p data-i18n="find_intro">ZNBTS has a blood centre in every province. In Lusaka it's at UTH on Nationalist Road. Pick your town, or use your location, to see the closest one first.</p>
-      <div class="find-controls">
-        <button class="btn btn-primary" id="locate" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-          <span data-i18n="btn_locate">Use my location</span>
+      <div class="btn-row">
+        <a class="btn btn-primary" id="wa-btn" href="https://wa.me/" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-11.8 7L4 20l1.5-4A8 8 0 1 1 20 11.5z"/></svg>
+          <span data-i18n="btn_whatsapp">Share on WhatsApp</span>
+        </a>
+        <button class="btn" type="button" id="copy-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>
+          <span data-i18n="btn_copy">Copy link</span>
         </button>
-        <span class="or" data-i18n="or">or</span>
-        <select class="input" id="near" data-i18n-aria="choose_town" aria-label="Choose your town"></select>
+      </div>
+    </section>
+  </div>
+
+  <div class="side">
+    <div class="panel nudge" id="home-nudge" hidden>
+      <h2 class="ph" data-i18n="welcome_title">Set up your donor card</h2>
+      <p class="near-meta" data-i18n="nudge_text">Add your details and how you donate so your reminder uses the right waiting time.</p>
+      <div class="btn-row"><a class="btn btn-sm btn-primary" href="start.html" data-i18n="btn_add_details">Add my details</a></div>
+    </div>
+
+    <div class="panel near-card">
+      <div class="panel-head"><h2 class="ph" data-i18n="eyebrow_nearest">Nearest centre</h2><span class="chip" id="near-dist" hidden></span></div>
+      <div id="near-body"><p class="near-name" data-i18n="near_find_title">Find the blood centre closest to you</p><p class="near-meta" data-i18n="near_find_meta">There is a ZNBTS centre in every province.</p></div>
+      <div class="btn-row">
+        <a class="btn btn-sm" href="find.html" id="near-btn" data-i18n="btn_open_map">Open the map</a>
+        <a class="btn btn-sm btn-quiet" id="near-dir" href="find.html" target="_blank" rel="noopener" data-i18n="btn_directions" hidden>Directions</a>
       </div>
     </div>
 
-    <div class="find-grid">
-      <div id="map" class="map" role="region" data-i18n-aria="map_aria" aria-label="Map of ZNBTS blood centres"></div>
-      <div class="list-wrap">
-        <p class="list-note" data-i18n="list_note">Outside Lusaka, pins mark the town, not the building. Phone ahead before a long trip.</p>
-        <ul class="centre-list" id="centre-list"></ul>
-      </div>
+    <section class="visit" aria-labelledby="visit-title">
+      <h2 id="visit-title" class="visit-title" data-i18n="visit_title">Your visit, about an hour</h2>
+      <ol class="visit-steps">
+        <li><span class="v-num" aria-hidden="true">1</span><div><p class="v-head"><b data-i18n="v1_t">Sign in</b><span class="v-min" id="v1-min">5–10 min</span></p><p class="v-desc" data-i18n="v1_d">Show your NRC and fill in a short form.</p></div></li>
+        <li><span class="v-num" aria-hidden="true">2</span><div><p class="v-head"><b data-i18n="v2_t">Quick check</b><span class="v-min" id="v2-min">10–15 min</span></p><p class="v-desc" data-i18n="v2_d">Weight, blood pressure and a finger prick for iron.</p></div></li>
+        <li class="v-give"><span class="v-num" aria-hidden="true">3</span><div><p class="v-head"><b data-i18n="v3_t">Give</b><span class="v-min" id="v3-min">about 10 min</span></p><p class="v-desc" data-i18n="v3_d">About 450 ml. You'll feel a quick pinch at the start.</p></div></li>
+        <li><span class="v-num" aria-hidden="true">4</span><div><p class="v-head"><b data-i18n="v4_t">Rest and snack</b><span class="v-min" id="v4-min">10–15 min</span></p><p class="v-desc" data-i18n="v4_d">Sit for a while and have the drink and snack they give you.</p></div></li>
+      </ol>
+    </section>
+  </div>
+</div>
+
+<section class="where" aria-labelledby="where-title">
+  <div class="where-big">
+    <b>40%</b>
+    <span data-i18n="where_mothers">Pregnant women with complications</span>
+  </div>
+  <div class="where-detail">
+    <h2 id="where-title" data-i18n="where_title">Where your blood goes</h2>
+    <p class="muted" data-i18n="where_lead">Most of it goes to mothers and young children.</p>
+    <div class="share-bar" role="img" data-i18n-aria="where_aria" aria-label="40% to pregnant women with complications, 20% to children under five, 40% to everyone else">
+      <span class="seg mothers" style="width:40%"></span><span class="seg children" style="width:20%"></span><span class="seg others" style="width:40%"></span>
     </div>
+    <ul class="share-legend">
+      <li><i class="sw mothers"></i><b>40%</b><span data-i18n="where_mothers">Pregnant women with complications</span></li>
+      <li><i class="sw children"></i><b>20%</b><span data-i18n="where_children">Children under five</span></li>
+      <li><i class="sw others"></i><b>40%</b><span data-i18n="where_others">Everyone else: sickle cell, cancer, surgery and accidents</span></li>
+    </ul>
+    <p class="source" data-i18n="where_src">Figures from ZNBTS, shared during the Ama Hero donor campaign.</p>
+  </div>
+</section>
 
-    <div class="drives">
-      <h3 data-i18n="drives_title">Mobile blood drives</h3>
-      <p data-i18n="drives_text">A study at the Lusaka centre found about 90% of its blood came from mobile drives at schools, colleges and universities. If your school, church or workplace wants a drive, ask your nearest centre.</p>
-      <p><a href="https://www.facebook.com/p/Zambia-National-Blood-Transfusion-Service-100077769844561/" target="_blank" rel="noopener" data-i18n="fb_link">ZNBTS on Facebook</a></p>
+<section class="goal" aria-labelledby="goal-title">
+  <div class="panel-head"><h2 id="goal-title" data-i18n="goal_title">Zambia's blood goal</h2><span class="chip" data-i18n="goal_chip">Units per year</span></div>
+  <p class="muted" data-i18n="goal_text">Zambia collected 130,000 units in 2023. ZNBTS's Ama Hero campaign is aiming for 400,000 a year by 2026. Every regular donor moves the first bar.</p>
+  <div class="goal-bars">
+    <div class="goal-row">
+      <div class="goal-label"><span data-i18n="goal_collected">Collected in 2023</span><span class="mono">130,000</span></div>
+      <div class="goal-track"><div class="goal-bar" style="width:32.5%"></div></div>
     </div>
-  </section>
-
-  <!-- DONOR CARD -->
-  <section class="view" id="view-remind" hidden aria-labelledby="remind-title">
-    <div class="find-head">
-      <h1 id="remind-title" data-i18n="remind_title">My donor card</h1>
-      <p data-i18n="remind_intro">Your details, your donations and your next date to give.</p>
+    <div class="goal-row">
+      <div class="goal-label"><span data-i18n="goal_target">Target for 2026</span><span class="mono">400,000</span></div>
+      <div class="goal-track"><div class="goal-bar target" style="width:100%"></div></div>
     </div>
+  </div>
+  <p class="source" data-i18n="goal_src">Source: Presidential Delivery Unit and ZNBTS.</p>
+</section>
 
-    <div class="remind-grid">
-      <div class="panel">
-        <div class="profile" id="profile-box"></div>
-        <p class="list-note" id="profile-nudge" data-i18n="card_no_profile" hidden>Add your details so we can set the right reminder for you.</p>
-        <p class="small sex-note" id="sex-note" hidden></p>
-        <p class="small muted" id="profile-reminders"></p>
-        <div class="card-img">
-          <p class="card-img-head"><b data-i18n="card_img_title">Your card as a picture</b><span class="small muted" data-i18n="card_img_text">Save it to your gallery. The QR code takes friends straight to this app.</span></p>
-          <canvas id="card-canvas" width="1080" height="680" role="img" aria-label="Donor card"></canvas>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-sm btn-primary" type="button" id="card-save">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
-            <span data-i18n="btn_save_card">Save or share image</span>
-          </button>
-          <a class="btn btn-sm" href="#welcome" id="profile-btn">Edit profile</a>
-        </div>
-      </div>
-
-      <div class="panel">
-        <p class="eyebrow" data-i18n="eyebrow_next_reminder">Next donation</p>
-        <div>
-          <p class="next-date" id="next-date"></p>
-          <p class="next-rel" id="next-rel"></p>
-        </div>
-        <p class="small muted" id="next-basis" hidden></p>
-        <div class="btn-row">
-          <button class="btn btn-primary" id="ics-btn" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-            <span data-i18n="btn_ics">Add to calendar</span>
-          </button>
-          <a class="btn" id="gcal-btn" href="#" target="_blank" rel="noopener">Google Calendar</a>
-          <button class="btn btn-quiet" id="notify-btn" type="button">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></svg>
-            <span id="notify-label">Turn on notifications</span>
-          </button>
-        </div>
-        <p class="notify-status" id="notify-status"></p>
-      </div>
-
-      <div class="panel">
-        <p class="eyebrow" data-i18n="eyebrow_log">Log a donation</p>
-        <form class="form-grid" id="log-form" novalidate>
-          <fieldset class="fs full">
-            <legend data-i18n="label_type">Type of donation</legend>
-            <div class="segmented log-type" id="log-type">
-              <label><input type="radio" name="log-type" id="lt-whole" value="whole" checked><span data-i18n="type_whole">Whole blood</span></label>
-              <label><input type="radio" name="log-type" id="lt-platelets" value="platelets"><span data-i18n="type_platelets">Platelets</span></label>
-              <label><input type="radio" name="log-type" id="lt-plasma" value="plasma"><span data-i18n="type_plasma">Plasma</span></label>
-            </div>
-          </fieldset>
-          <label class="field" for="log-date"><span data-i18n="label_date">Date you donated</span>
-            <input class="input" type="date" id="log-date" required>
-          </label>
-          <label class="field" for="log-centre"><span data-i18n="label_where">Where</span>
-            <select class="input" id="log-centre"></select>
-          </label>
-          <div class="full btn-row">
-            <button class="btn btn-primary" type="submit" data-i18n="btn_save">Save donation</button>
-            <button class="btn btn-quiet" type="button" id="today-btn" data-i18n="btn_today">I donated today</button>
-          </div>
-          <p class="full err" id="log-error" role="alert" hidden></p>
-        </form>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head"><p class="eyebrow" data-i18n="eyebrow_history">History</p><span class="small muted" data-i18n="device_only">Only on this phone</span></div>
-        <div class="type-stats" id="type-stats"></div>
-        <ul class="history" id="history"></ul>
-        <div class="danger-zone">
-          <span class="small muted" data-i18n="switching">New phone? Your history won't move with you yet.</span>
-          <div class="confirm" id="clear-wrap"></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- INFO -->
-  <section class="view" id="view-info" hidden aria-labelledby="info-title">
-    <div class="find-head">
-      <h1 id="info-title" data-i18n="info_title">Before you donate</h1>
-      <p data-i18n="info_intro">Plan for about an hour. The needle part takes around ten minutes. Staff check everyone before they give, and they have the final say.</p>
-    </div>
-
-    <h2 data-i18n="ways_title">Ways to donate</h2>
-    <div class="ways">
-      <article class="panel way whole">
-        <h3><span class="dot"></span><span data-i18n="type_whole">Whole blood</span></h3>
-        <p data-i18n="whole_what">The most common donation. About 450 ml of blood is collected.</p>
-        <dl class="facts">
-          <div><dt data-i18n="way_often">How often</dt><dd id="often-whole">Men every 3 months, women every 4 months</dd></div>
-          <div><dt data-i18n="way_time">Takes</dt><dd data-i18n="whole_time">About 10 minutes with the needle</dd></div>
-          <div><dt data-i18n="way_helps">Helps</dt><dd data-i18n="whole_helps">Mothers who bleed in childbirth, children with severe anaemia, and accident and surgery patients.</dd></div>
-        </dl>
-      </article>
-      <article class="panel way platelets">
-        <h3><span class="dot"></span><span data-i18n="type_platelets">Platelets</span></h3>
-        <p data-i18n="plt_what">A machine collects only your platelets and returns the rest of your blood to you. This is called apheresis.</p>
-        <dl class="facts">
-          <div><dt data-i18n="way_often">How often</dt><dd id="often-platelets">Every 2 weeks</dd></div>
-          <div><dt data-i18n="way_time">Takes</dt><dd data-i18n="plt_time">1 to 2 hours</dd></div>
-          <div><dt data-i18n="way_helps">Helps</dt><dd data-i18n="plt_helps">Platelets help blood to clot. They are used for patients with cancer, leukaemia and severe bleeding.</dd></div>
-        </dl>
-      </article>
-      <article class="panel way plasma">
-        <h3><span class="dot"></span><span data-i18n="type_plasma">Plasma</span></h3>
-        <p data-i18n="pls_what">Plasma is the liquid part of your blood. It is also collected by apheresis.</p>
-        <dl class="facts">
-          <div><dt data-i18n="way_often">How often</dt><dd id="often-plasma">Every 2 weeks</dd></div>
-          <div><dt data-i18n="way_time">Takes</dt><dd data-i18n="pls_time">About 1 hour</dd></div>
-          <div><dt data-i18n="way_helps">Helps</dt><dd data-i18n="pls_helps">Patients with severe burns, heavy bleeding, and liver or clotting problems.</dd></div>
-        </dl>
-      </article>
-    </div>
-    <p class="ways-note" data-i18n="ways_note">Platelet and plasma donation may only be available at some centres. Ask your nearest centre.</p>
-
-    <div class="info-grid">
-      <div class="panel">
-        <h2 data-i18n="info_who_h">Who can usually give</h2>
-        <ul class="ticks">
-          <li data-i18n="who1">You are aged 16 to 65</li><li data-i18n="who2">You weigh at least 50 kg</li><li data-i18n="who3">You feel well on the day</li><li data-i18n="who4">You consider your blood safe to give to a patient</li>
-        </ul>
-        <p class="small muted" data-i18n="who_note">On arrival the team checks your weight, blood pressure and haemoglobin (iron level) with a quick finger prick.</p>
-      </div>
-      <div class="panel">
-        <h2 data-i18n="info_before_h">Before you go</h2>
-        <ul class="ticks">
-          <li data-i18n="b1">Eat a proper meal in the 3 to 4 hours before</li><li data-i18n="b6">In the days before, eat iron-rich food such as beans, kapenta, eggs, meat and dark green vegetables like rape or pumpkin leaves</li><li data-i18n="b2">Drink plenty of water</li><li data-i18n="b3">Avoid alcohol the day before</li><li data-i18n="b4">Carry your NRC or another photo ID</li><li data-i18n="b5">Wear a top with sleeves that roll up easily</li>
-        </ul>
-      </div>
-      <div class="panel">
-        <h2 data-i18n="info_after_h">After you donate</h2>
-        <ul class="ticks">
-          <li data-i18n="a1">Rest for 10 to 15 minutes and take the drink and snack offered</li><li data-i18n="a2">Drink extra fluids for the next 24 hours</li><li data-i18n="a3">Skip heavy lifting and hard exercise for the rest of the day</li><li data-i18n="a4">If you feel faint, sit or lie down with your feet raised</li><li data-i18n="a5">Log the donation on your donor card so your reminder stays accurate</li>
-        </ul>
-      </div>
-      <div class="panel">
-        <h2 data-i18n="info_ask_h">Check with the team first if you</h2>
-        <ul class="ticks ask">
-          <li data-i18n="k1">Have a fever, cough or feel unwell</li><li data-i18n="k2">Have had malaria recently</li><li data-i18n="k6">Have had a vaccination recently</li><li data-i18n="k3">Are pregnant or have recently given birth</li><li data-i18n="k4">Had a tattoo, piercing, surgery or a transfusion recently</li><li data-i18n="k5">Take regular medication</li>
-        </ul>
-      </div>
-    </div>
-    <div class="panel about">
-      <h3 data-i18n="about_h">About this app</h3>
-      <p data-i18n="about_p">Pulumutsa Moyo is an independent prototype, built for a pilot with the Zambia National Blood Transfusion Service (ZNBTS). It isn't an official ZNBTS app yet. The donation rules and health advice come from public sources, and ZNBTS staff will check them before launch. The Lusaka pin sits at UTH; the others mark the town. Everything you enter stays on this phone.</p>
-    </div>
-  </section>
+</div>
 </main>
 
 <nav class="tabbar" aria-label="Main">
-  <a href="#home" data-view="home">
+  <a href="index.html" aria-current="page">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s-7 7.6-7 12a7 7 0 0 0 14 0c0-4.4-7-12-7-12z"/></svg>
     <span data-i18n="tab_home">Home</span>
   </a>
-  <a href="#find" data-view="find">
+  <a href="find.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15 12 21 12 21z"/><circle cx="12" cy="10" r="2.3"/></svg>
     <span data-i18n="tab_find">Find</span>
   </a>
-  <a href="#remind" data-view="remind">
+  <a href="card.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4M14 13.5h3"/></svg>
     <span data-i18n="tab_remind">Card</span>
   </a>
-  <a href="#info" data-view="info">
+  <a href="info.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5V3h6v1.5M9 11l2 2 4-4M9 17h6"/></svg>
     <span data-i18n="tab_info">Before</span>
   </a>
@@ -471,8 +202,6 @@
 
 <div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-msg"></span><button type="button" id="toast-action" hidden></button></div>
 
-<script src="js/vendor/leaflet.js"></script>
-<script src="js/vendor/qrcode.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/data.js"></script>
 <script src="js/app.js"></script>

@@ -1,46 +1,57 @@
-/* Pulumutsa Moyo: app logic.
-   Needs i18n.js and data.js loaded first (I18N, CENTRES, TOWNS, RULES and the rest). */
+/* Pulumutsa Moyo
+   One script for every page. Each page only has some of the parts below,
+   so each render step checks its elements exist before touching them.
+   Load order: i18n.js, data.js, then this file. */
 (function () {
   "use strict";
 
-  // Rough time for each step of a visit, in minutes.
+  var PAGE = document.body.getAttribute("data-page") || "home";
+  var KEY = "znbts-donor-v1";
+  var FLASH_KEY = "pm-flash";
+  // Rough minutes for each step of a visit: sign in, check, give, rest.
   var VISIT_MIN = [[5, 10], [10, 15], [10], [10, 15]];
 
-  /* ---------------- Storage ---------------- */
-  var KEY = "znbts-donor-v1";
+  // ---- Saved state (this browser only) ----
+
   function defaultProfile() {
     return { name: "", phone: "", email: "", sex: "", bloodGroup: "", types: [], sms: false, emailOn: false, consent: false, registered: false, skipped: false };
   }
   function defaults() { return { donations: [], profile: defaultProfile(), near: "", loc: null, lastNotified: "", lang: "en" }; }
+
   function load() {
     try {
       var raw = localStorage.getItem(KEY);
-      if (raw) {
-        var s = JSON.parse(raw);
-        if (s && Array.isArray(s.donations)) {
-          var d = defaults();
-          ["near", "loc", "lastNotified", "lang"].forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k]; });
-          d.donations = s.donations.filter(function (x) { return x && /^\d{4}-\d{2}-\d{2}$/.test(x.date); }).map(function (x) {
-            return { id: x.id || ("d" + Math.random().toString(36).slice(2, 9)), date: x.date, centre: x.centre || "", type: TYPES.indexOf(x.type) >= 0 ? x.type : "whole" };
-          });
-          var p = s.profile || {}, dp = defaultProfile();
-          for (var k in dp) if (Object.prototype.hasOwnProperty.call(p, k)) dp[k] = p[k];
-          if (!dp.bloodGroup && s.bloodGroup) dp.bloodGroup = s.bloodGroup; // earlier versions kept it at the top level
-          if (!Array.isArray(dp.types)) dp.types = [];
-          dp.types = dp.types.filter(function (x) { return TYPES.indexOf(x) >= 0; });
-          d.profile = dp;
-          if (!I18N[d.lang]) d.lang = "en";
-          if (d.loc && d.loc.label === "your location") d.loc.label = "@you";
-          return d;
-        }
-      }
-    } catch (e) {}
-    return defaults();
+      if (!raw) return defaults();
+      var s = JSON.parse(raw);
+      if (!s || !Array.isArray(s.donations)) return defaults();
+      var d = defaults();
+      ["near", "loc", "lastNotified", "lang"].forEach(function (k) { if (Object.prototype.hasOwnProperty.call(s, k)) d[k] = s[k]; });
+      d.donations = s.donations.filter(function (x) { return x && /^\d{4}-\d{2}-\d{2}$/.test(x.date); }).map(function (x) {
+        return { id: x.id || ("d" + Math.random().toString(36).slice(2, 9)), date: x.date, centre: x.centre || "", type: TYPES.indexOf(x.type) >= 0 ? x.type : "whole" };
+      });
+      var p = s.profile || {}, dp = defaultProfile();
+      for (var k in dp) if (Object.prototype.hasOwnProperty.call(p, k)) dp[k] = p[k];
+      if (!dp.bloodGroup && s.bloodGroup) dp.bloodGroup = s.bloodGroup; // older saves kept it at the top level
+      dp.types = Array.isArray(dp.types) ? dp.types.filter(function (x) { return TYPES.indexOf(x) >= 0; }) : [];
+      d.profile = dp;
+      if (!I18N[d.lang]) d.lang = "en";
+      if (d.loc && d.loc.label === "your location") d.loc.label = "@you";
+      return d;
+    } catch (e) {
+      return defaults();
+    }
   }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
   var state = load();
 
-  /* ---------------- i18n ---------------- */
+  // A message to show after moving to another page.
+  function flash(msg) { try { sessionStorage.setItem(FLASH_KEY, msg); } catch (e) {} }
+  function takeFlash() {
+    try { var m = sessionStorage.getItem(FLASH_KEY); sessionStorage.removeItem(FLASH_KEY); return m; } catch (e) { return null; }
+  }
+
+  // ---- Text ----
+
   function t(key, vars) {
     var dict = I18N[state.lang] || I18N.en;
     var s = Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : I18N.en[key];
@@ -51,7 +62,8 @@
   function dayUnit(n) { return n === 1 ? t("day_one") : t("day_many"); }
   function typeName(type, lower) { return t((lower ? "typel_" : "type_") + (TYPES.indexOf(type) >= 0 ? type : "whole")); }
 
-  /* ---------------- Dates ---------------- */
+  // ---- Dates (kept as YYYY-MM-DD strings, worked out in UTC) ----
+
   function pad(n) { return (n < 10 ? "0" : "") + n; }
   function iso(y, m, d) { return y + "-" + pad(m) + "-" + pad(d); }
   function todayISO() { var d = new Date(); return iso(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
@@ -59,12 +71,10 @@
   function toUTC(s) { var p = parts(s); return Date.UTC(p[0], p[1] - 1, p[2]); }
   function fromUTC(ms) { var d = new Date(ms); return iso(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); }
   function addMonths(s, n) {
-    var p = parts(s);
-    var m0 = p[1] - 1 + n;
-    var y = p[0] + Math.floor(m0 / 12);
-    var m = ((m0 % 12) + 12) % 12;
+    var p = parts(s), m0 = p[1] - 1 + n;
+    var y = p[0] + Math.floor(m0 / 12), m = ((m0 % 12) + 12) % 12;
     var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
-    return iso(y, m + 1, Math.min(p[2], last));
+    return iso(y, m + 1, Math.min(p[2], last)); // 31 Aug + 6 months = 28 Feb
   }
   function addDays(s, n) { return fromUTC(toUTC(s) + n * 86400000); }
   function daysBetween(a, b) { return Math.round((toUTC(b) - toUTC(a)) / 86400000); }
@@ -77,10 +87,11 @@
   }
   function compact(s) { return s.replace(/-/g, ""); }
 
-  /* ---------------- Waiting times ---------------- */
+  // ---- Waiting times ----
+
   function intervalFor(type, sex) {
     var r = RULES[type] || RULES.whole;
-    if (r.m) return sex === "m" ? r.m : r.f;
+    if (r.m) return sex === "m" ? r.m : r.f; // sex unknown: use the longer wait
     return r;
   }
   function addInterval(s, iv) { return iv.months ? addMonths(s, iv.months) : addDays(s, iv.days); }
@@ -93,7 +104,7 @@
 
   function sortedDonations() { return state.donations.slice().sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; }); }
   function latest() { return sortedDonations()[0] || null; }
-  // The next date is the latest of every donation's own waiting time.
+  // Each donation has its own wait. The next date is the latest of them.
   function nextInfo() {
     var best = null, sex = state.profile.sex;
     state.donations.forEach(function (d) {
@@ -103,21 +114,21 @@
     return best;
   }
   function nextDue() { var n = nextInfo(); return n ? n.due : null; }
-
   function status() {
     var td = todayISO(), n = nextInfo();
     if (!n) { var pt = preferredType(); return { kind: "none", type: pt, ifToday: addInterval(td, intervalFor(pt, state.profile.sex)) }; }
-    var total = Math.max(1, daysBetween(n.from.date, n.due));
-    var left = daysBetween(td, n.due);
+    var total = Math.max(1, daysBetween(n.from.date, n.due)), left = daysBetween(td, n.due);
     if (left <= 0) return { kind: "ready", due: n.due, from: n.from, iv: n.iv, overdue: -left };
     var since = daysBetween(n.from.date, td);
     return { kind: "wait", due: n.due, from: n.from, iv: n.iv, left: left, total: total, progress: Math.min(1, Math.max(0, since / total)) };
   }
 
-  /* ---------------- Helpers ---------------- */
+  // ---- Small helpers ----
+
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   function elOf(target) { var el = target; if (el && el.nodeType !== 1) el = el.parentNode; return el && el.closest ? el : null; }
+  function setText(id, text) { var el = $(id); if (el) el.textContent = text; }
   function centreById(id) { for (var i = 0; i < CENTRES.length; i++) if (CENTRES[i].id === id) return CENTRES[i]; return null; }
   function centreLabel(id) {
     if (id === "mobile") return t("opt_mobile");
@@ -137,7 +148,7 @@
   }
   function fmtKm(km) { return km < 1 ? t("dist_under1") : Math.round(km).toLocaleString("en-GB") + " km"; }
 
-  // Zambian mobile numbers: 9 digits after the leading 0 or +260, starting with 7 or 9.
+  // Zambian mobile numbers: 9 digits after 0 or +260, starting 7 or 9 (Airtel, MTN, Zamtel).
   function normPhone(v) {
     var d = String(v).replace(/[^\d+]/g, "");
     if (d.indexOf("+260") === 0) d = d.slice(4);
@@ -151,6 +162,7 @@
   var toastTimer = null;
   function toast(msg, actionLabel, action) {
     var el = $("toast"), btn = $("toast-action");
+    if (!el) return;
     $("toast-msg").textContent = msg;
     if (actionLabel) { btn.textContent = actionLabel; btn.hidden = false; btn.onclick = function () { action(); hideToast(); }; }
     else { btn.hidden = true; btn.onclick = null; }
@@ -158,13 +170,12 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(hideToast, actionLabel ? 6000 : 4200);
   }
-  function hideToast() { $("toast").classList.remove("show"); }
+  function hideToast() { var el = $("toast"); if (el) el.classList.remove("show"); }
 
-  var FRAMED = (function () { try { return window.self !== window.top; } catch (e) { return true; } })();
-  if (FRAMED) document.documentElement.classList.add("framed");
   var IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-  /* ---------------- Location ---------------- */
+  // ---- Location ----
+
   function userLoc() { return state.loc && typeof state.loc.lat === "number" ? state.loc : null; }
   function fromLabel(u) { return u.label === "@you" ? t("from_you") : t("from_town", { town: u.label }); }
   function centresByDistance() {
@@ -175,31 +186,35 @@
     return list;
   }
 
-  /* ---------------- Static text ---------------- */
+  // ---- Text that sits in the page ----
+
+  var PAGE_TITLE = { start: "welcome_title", find: "nav_find", card: "nav_remind", info: "nav_info" };
   function applyStatic() {
-    document.documentElement.lang = HTML_LANG[state.lang] || "en";
+    document.documentElement.lang = state.lang;
+    document.title = PAGE_TITLE[PAGE] ? t(PAGE_TITLE[PAGE]) + " · Pulumutsa Moyo" : "Pulumutsa Moyo";
     Array.prototype.forEach.call(document.querySelectorAll("[data-i18n]"), function (el) { el.textContent = t(el.getAttribute("data-i18n")); });
     Array.prototype.forEach.call(document.querySelectorAll("[data-i18n-html]"), function (el) { el.innerHTML = t(el.getAttribute("data-i18n-html")); });
     Array.prototype.forEach.call(document.querySelectorAll("[data-i18n-aria]"), function (el) { el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria"))); });
-    $("lang-code").textContent = t("code");
+    setText("lang-code", t("code"));
     Array.prototype.forEach.call(document.querySelectorAll("[data-lang]"), function (b) { b.setAttribute("aria-checked", String(b.getAttribute("data-lang") === state.lang)); });
     Array.prototype.forEach.call(document.querySelectorAll("[data-pick-lang]"), function (b) { b.setAttribute("aria-pressed", String(b.getAttribute("data-pick-lang") === state.lang)); });
     TYPES.forEach(function (ty) {
-      $("pt-" + ty + "-rule").textContent = ruleText(ty);
-      $("often-" + ty).textContent = ruleText(ty);
+      setText("pt-" + ty + "-rule", ruleText(ty));
+      setText("often-" + ty, ruleText(ty));
     });
-    $("sex-hint").textContent = t("f_sex_hint", { m: RULES.whole.m.months, f: RULES.whole.f.months });
+    setText("sex-hint", t("f_sex_hint", { m: RULES.whole.m.months, f: RULES.whole.f.months }));
     VISIT_MIN.forEach(function (m, i) {
-      $("v" + (i + 1) + "-min").textContent = m.length > 1 ? t("m_range", { a: m[0], b: m[1] }) : t("m_about", { a: m[0] });
+      setText("v" + (i + 1) + "-min", m.length > 1 ? t("m_range", { a: m[0], b: m[1] }) : t("m_about", { a: m[0] }));
     });
   }
 
-  /* ---------------- Render: home ---------------- */
+  // ---- Home ----
+
   function renderHome() {
+    if (!$("st-title")) return;
     var s = status(), p = state.profile;
     var title = $("st-title"), lead = $("st-lead"), eyebrow = $("st-eyebrow"), actions = $("st-actions");
-    var fill = $("bag-fill"), btext = $("bag-text"), cap = $("bag-cap");
-    var level;
+    var fill = $("bag-fill"), btext = $("bag-text"), cap = $("bag-cap"), level;
     $("ready-banner").hidden = s.kind !== "ready";
     $("home-nudge").hidden = !!p.registered;
     title.classList.remove("long");
@@ -208,20 +223,20 @@
       eyebrow.textContent = t("eyebrow_next");
       title.textContent = t("ready_title");
       lead.innerHTML = t("lead_none_html", { type: esc(typeName(s.type, true)), date: esc(fmt(s.ifToday, true)) });
-      actions.innerHTML = '<a class="btn btn-primary" href="#find">' + esc(t("btn_find")) + '</a><a class="btn" href="#remind">' + esc(t("btn_log_past")) + "</a>";
+      actions.innerHTML = '<a class="btn btn-primary" href="find.html">' + esc(t("btn_find")) + '</a><a class="btn" href="card.html">' + esc(t("btn_log_past")) + "</a>";
       level = 1; btext.textContent = "100%"; cap.textContent = t("cap_full");
     } else if (s.kind === "ready") {
       var l = latest();
       eyebrow.textContent = t("eyebrow_last", { type: typeName(l.type, true), date: fmt(l.date) });
       title.textContent = t("ready_again_title");
       lead.innerHTML = t("lead_ready_html");
-      actions.innerHTML = '<a class="btn btn-primary" href="#find">' + esc(t("btn_find")) + '</a><button class="btn" type="button" data-act="today">' + esc(t("btn_today")) + "</button>";
+      actions.innerHTML = '<a class="btn btn-primary" href="find.html">' + esc(t("btn_find")) + '</a><button class="btn" type="button" data-act="today">' + esc(t("btn_today")) + "</button>";
       level = 1; btext.textContent = "100%"; cap.textContent = t("cap_full");
     } else {
       eyebrow.textContent = t("eyebrow_next");
       title.innerHTML = t("hero_days_html", { n: s.left, unit: esc(dayUnit(s.left)) });
       lead.innerHTML = t("lead_wait_html", { date: esc(fmt(s.due, true)) });
-      actions.innerHTML = '<a class="btn btn-primary" href="#remind">' + esc(t("btn_card")) + '</a><a class="btn" href="#find">' + esc(t("btn_see_centres")) + "</a>";
+      actions.innerHTML = '<a class="btn btn-primary" href="card.html">' + esc(t("btn_card")) + '</a><a class="btn" href="find.html">' + esc(t("btn_see_centres")) + "</a>";
       level = s.progress; btext.textContent = Math.round(s.progress * 100) + "%";
       cap.textContent = t("cap_rebuild", { d: s.total - s.left, t: s.total });
     }
@@ -244,12 +259,13 @@
       chip.hidden = true; dir.hidden = true;
       $("near-btn").textContent = t("btn_open_map");
     }
-    renderInvite();
+    var wa = $("wa-btn");
+    if (wa) wa.href = "https://wa.me/?text=" + encodeURIComponent(t("share_msg", { url: shareUrl() }));
   }
 
-  function shareUrl() { return /^https?:$/.test(location.protocol) ? location.origin + location.pathname : SITE_URL; }
-  function renderInvite() {
-    $("wa-btn").href = "https://wa.me/?text=" + encodeURIComponent(t("share_msg", { url: shareUrl() }));
+  function shareUrl() {
+    if (!/^https?:$/.test(location.protocol)) return SITE_URL;
+    return location.origin + location.pathname.replace(/[^/]*$/, "");
   }
   function copyLink() {
     var url = shareUrl();
@@ -263,23 +279,22 @@
         toast(ok ? t("t_copied") : t("t_copy_fail", { url: url }));
       } catch (e) { toast(t("t_copy_fail", { url: url })); }
     }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(url).then(function () { toast(t("t_copied")); }, fallback);
-    } else fallback();
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast(t("t_copied")); }, fallback);
+    else fallback();
   }
 
-  /* ---------------- Render: donor card ---------------- */
+  // ---- Donor card page ----
+
   function badgeSvg(bg) {
     var label = bg && bg !== "unknown" ? bg : "?";
-    var size = label.length >= 3 ? 15 : 19;
     return '<svg class="bg-badge' + (label === "?" ? " empty" : "") + '" viewBox="0 0 60 72" aria-hidden="true">' +
       '<path d="M30 3C30 3 5 31 5 46.5a25 25 0 0 0 50 0C55 31 30 3 30 3Z"/>' +
-      '<text x="30" y="56" text-anchor="middle" font-size="' + size + '">' + esc(label) + "</text></svg>";
+      '<text x="30" y="56" text-anchor="middle" font-size="' + (label.length >= 3 ? 15 : 19) + '">' + esc(label) + "</text></svg>";
   }
 
   function renderCard() {
-    var p = state.profile;
-    var meta = [];
+    if (!$("profile-box")) return;
+    var p = state.profile, meta = [];
     if (p.sex) meta.push(t(p.sex === "m" ? "sex_m" : "sex_f"));
     if (p.bloodGroup && p.bloodGroup !== "unknown") meta.push(t("f_bg") + " " + p.bloodGroup);
     if (p.phone) meta.push(p.phone);
@@ -300,10 +315,8 @@
     var pb = $("profile-btn");
     pb.textContent = p.registered ? t("btn_edit_profile") : t("btn_add_details");
     pb.classList.toggle("btn-primary", !p.registered);
-
     drawCardSoon();
 
-    // Next donation
     var s = status(), info = nextInfo(), due = info ? info.due : null;
     if (s.kind === "none") {
       $("next-date").textContent = t("not_set");
@@ -321,39 +334,46 @@
 
     $("ics-btn").disabled = !due;
     var g = $("gcal-btn");
-    if (due) { g.href = gcalUrl(info); g.removeAttribute("aria-disabled"); g.style.pointerEvents = ""; g.style.opacity = ""; }
-    else { g.href = "#"; g.setAttribute("aria-disabled", "true"); g.style.pointerEvents = "none"; g.style.opacity = ".5"; }
+    if (due) { g.href = gcalUrl(info); g.removeAttribute("aria-disabled"); g.classList.remove("is-off"); }
+    else { g.href = "#"; g.setAttribute("aria-disabled", "true"); g.classList.add("is-off"); }
     renderNotify();
     $("notify-status").textContent = info ? t("notify_status_due", { every: everyText(info.iv), date: fmt(due) }) : t("notify_status_none");
 
-    // Stats by type
     var counts = { whole: 0, platelets: 0, plasma: 0 };
     state.donations.forEach(function (d) { counts[d.type] = (counts[d.type] || 0) + 1; });
     $("type-stats").innerHTML = '<div class="stat"><b>' + state.donations.length + "</b><span>" + esc(t("stat_total")) + "</span></div>" +
       TYPES.map(function (ty) { return '<div class="stat"><b>' + counts[ty] + "</b><span>" + esc(typeName(ty)) + "</span></div>"; }).join("");
 
-    // History
-    var hist = $("history"), list = sortedDonations();
-    if (!list.length) {
-      hist.innerHTML = '<li class="empty">' + esc(t("history_empty")) + "</li>";
-    } else {
-      hist.innerHTML = list.map(function (d) {
-        return '<li><span class="h-date">' + esc(fmt(d.date)) + "</span>" +
-          '<span class="h-mid"><span class="tchip ' + d.type + '">' + esc(typeName(d.type)) + '</span><span class="h-where">' + esc(centreLabel(d.centre)) + "</span></span>" +
-          '<button class="icon-btn" type="button" data-remove="' + d.id + '" aria-label="' + esc(t("remove_aria", { date: fmt(d.date) })) + '">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>';
-      }).join("");
-    }
+    var list = sortedDonations();
+    $("history").innerHTML = !list.length ? '<li class="empty">' + esc(t("history_empty")) + "</li>" : list.map(function (d) {
+      return '<li><span class="h-date">' + esc(fmt(d.date)) + "</span>" +
+        '<span class="h-mid"><span class="tchip ' + d.type + '">' + esc(typeName(d.type)) + '</span><span class="h-where">' + esc(centreLabel(d.centre)) + "</span></span>" +
+        '<button class="icon-btn" type="button" data-remove="' + d.id + '" aria-label="' + esc(t("remove_aria", { date: fmt(d.date) })) + '">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></li>';
+    }).join("");
   }
 
-  /* ---------------- Donor card picture ----------------
-     Drawn on a canvas so donors can keep it in their phone's gallery.
-     It shows no phone number or email, only what is safe to share. */
-  var CARD_W = 1080, CARD_H = 680;
-  var CARD = { bg1: "#7E0C22", bg2: "#B0142F", cream: "#FBF1EA", copper: "#E39E64", ink: "#FFFFFF" };
+  function renderNotify() {
+    var btn = $("notify-btn");
+    if (!btn) return;
+    if (!("Notification" in window)) { btn.hidden = true; return; }
+    var p;
+    try { p = Notification.permission; } catch (e) { btn.hidden = true; return; }
+    btn.hidden = false;
+    btn.disabled = p !== "default";
+    $("notify-label").textContent = p === "granted" ? t("notify_on") : p === "denied" ? t("notify_blocked") : t("notify_off");
+  }
+
+  // ---- Card picture (canvas) ----
+  // Only shows what is safe to share: no phone number, no email.
+
+  var CARD = { w: 1080, h: 680, bg1: "#7E0C22", bg2: "#B0142F", cream: "#FBF1EA", copper: "#E39E64", ink: "#FFFFFF" };
+  var DISPLAY = '"Archivo", "Arial Narrow", Arial, sans-serif';
+  var BODY = '"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
   var drawQueued = false;
+
   function drawCardSoon() {
-    if (drawQueued) return;
+    if (drawQueued || !$("card-canvas")) return;
     drawQueued = true;
     var go = function () { drawQueued = false; try { drawCard($("card-canvas")); } catch (e) {} };
     if (window.requestAnimationFrame) requestAnimationFrame(go); else setTimeout(go, 0);
@@ -365,16 +385,16 @@
     ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
     ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
   }
+  // Same zigzag as the band under the header.
   function drawBand(ctx, x, y, w, h) {
-    var u = h;
-    for (var k = -1; k * u < w + u; k++) {
-      var bx = x + k * u;
+    for (var k = -1; k * h < w + h; k++) {
+      var bx = x + k * h;
       ctx.fillStyle = CARD.copper;
-      ctx.beginPath(); ctx.moveTo(bx - u / 2, y); ctx.lineTo(bx + u / 2, y); ctx.lineTo(bx, y + h); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(bx - h / 2, y); ctx.lineTo(bx + h / 2, y); ctx.lineTo(bx, y + h); ctx.closePath(); ctx.fill();
       ctx.fillStyle = CARD.cream;
-      ctx.beginPath(); ctx.moveTo(bx, y + h); ctx.lineTo(bx + u / 2, y); ctx.lineTo(bx + u, y + h); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(bx, y + h); ctx.lineTo(bx + h / 2, y); ctx.lineTo(bx + h, y + h); ctx.closePath(); ctx.fill();
       ctx.fillStyle = CARD.bg2;
-      ctx.beginPath(); ctx.arc(bx + u / 2, y + h * 0.72, h * 0.11, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(bx + h / 2, y + h * 0.72, h * 0.11, 0, Math.PI * 2); ctx.fill();
     }
   }
   function fitText(ctx, text, maxW, weight, size, minSize, family) {
@@ -387,19 +407,17 @@
     return out + "…";
   }
   function wrapLines(ctx, text, maxW) {
-    var words = text.split(" "), lines = [], line = "";
-    words.forEach(function (w) {
+    var lines = [], line = "";
+    text.split(" ").forEach(function (w) {
       var test = line ? line + " " + w : w;
       if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
     });
     if (line) lines.push(line);
     return lines;
   }
-  var DISPLAY = '"Archivo", "Arial Narrow", Arial, sans-serif';
-  var BODY = '"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
   function drawCard(canvas) {
     if (!canvas || !canvas.getContext) return;
-    var ctx = canvas.getContext("2d"), p = state.profile, W = CARD_W, H = CARD_H;
+    var ctx = canvas.getContext("2d"), p = state.profile, W = CARD.w, H = CARD.h;
     ctx.clearRect(0, 0, W, H);
     ctx.save();
     roundRectPath(ctx, 0, 0, W, H, 40); ctx.clip();
@@ -409,19 +427,15 @@
     drawBand(ctx, 0, 0, W, 34);
     ctx.textBaseline = "alphabetic";
 
-    // Eyebrow and name
-    ctx.fillStyle = CARD.copper;
-    ctx.font = "700 28px " + BODY;
+    ctx.fillStyle = CARD.copper; ctx.font = "700 28px " + BODY;
     ctx.fillText(("Pulumutsa Moyo · " + t("ci_head")).toUpperCase(), 64, 104);
     ctx.fillStyle = CARD.ink;
-    var name = fitText(ctx, p.name || t("card_donor"), 640, "900", 78, 46, DISPLAY);
-    ctx.fillText(name, 64, 190);
+    ctx.fillText(fitText(ctx, p.name || t("card_donor"), 640, "900", 78, 46, DISPLAY), 64, 190);
 
-    // Blood group drop
+    // Blood group in a drop, top right
     var bg = p.bloodGroup && p.bloodGroup !== "unknown" ? p.bloodGroup : "?";
     ctx.save();
-    ctx.translate(908, 70);
-    ctx.scale(2.6, 2.6);
+    ctx.translate(908, 70); ctx.scale(2.6, 2.6);
     ctx.fillStyle = CARD.cream;
     ctx.beginPath(); ctx.moveTo(30, 3); ctx.bezierCurveTo(30, 3, 5, 31, 5, 46.5);
     ctx.arc(30, 46.5, 25, Math.PI, 0, true); ctx.bezierCurveTo(55, 31, 30, 3, 30, 3); ctx.closePath(); ctx.fill();
@@ -431,29 +445,24 @@
     ctx.fillText(bg, 986, 222);
     ctx.textAlign = "left";
 
-    // Stats
     var info = nextInfo(), l = latest();
-    var cols = [
-      [t("ci_donations"), String(state.donations.length), 64],
-      [t("ci_last"), l ? fmt(l.date) : t("ci_none"), 250],
-      [t("ci_next"), info ? fmt(info.due) : t("ci_none"), 500]
-    ];
-    cols.forEach(function (c) {
+    [[t("ci_donations"), String(state.donations.length), 64],
+     [t("ci_last"), l ? fmt(l.date) : t("ci_none"), 250],
+     [t("ci_next"), info ? fmt(info.due) : t("ci_none"), 500]].forEach(function (c) {
       ctx.fillStyle = CARD.copper; ctx.font = "700 24px " + BODY; ctx.fillText(c[0].toUpperCase(), c[2], 300);
       ctx.fillStyle = CARD.ink;
-      var val = fitText(ctx, c[1], c[2] === 64 ? 170 : 236, "800", c[2] === 64 ? 64 : 40, 26, DISPLAY);
-      ctx.fillText(val, c[2], c[2] === 64 ? 366 : 356);
+      var first = c[2] === 64;
+      ctx.fillText(fitText(ctx, c[1], first ? 170 : 236, "800", first ? 64 : 40, 26, DISPLAY), c[2], first ? 366 : 356);
     });
 
-    // Donation types
     var types = (p.types.length ? p.types : sortedDonations().map(function (d) { return d.type; }))
       .filter(function (x, i, a) { return a.indexOf(x) === i; }).map(function (ty) { return typeName(ty); });
     if (types.length) {
-      ctx.fillStyle = CARD.cream; ctx.font = "600 28px " + BODY;
+      ctx.fillStyle = CARD.cream;
       ctx.fillText(fitText(ctx, types.join("  ·  "), 680, "600", 28, 20, BODY), 64, 450);
     }
 
-    // QR code to the app
+    // QR code that opens the app
     var qx = 800, qy = 300, qs = 216;
     ctx.fillStyle = "#FFFFFF"; roundRectPath(ctx, qx, qy, qs, qs, 20); ctx.fill();
     if (typeof qrcode === "function") {
@@ -468,24 +477,23 @@
     wrapLines(ctx, t("ci_scan"), 250).slice(0, 2).forEach(function (ln, i) { ctx.fillText(ln, qx + qs / 2, qy + qs + 34 + i * 26); });
     ctx.textAlign = "left";
 
-    // Honest footer
-    ctx.globalAlpha = 0.72; ctx.fillStyle = CARD.ink; ctx.font = "500 22px " + BODY;
+    ctx.globalAlpha = 0.72; ctx.fillStyle = CARD.ink;
     ctx.fillText(fitText(ctx, t("ci_note"), 680, "500", 22, 16, BODY), 64, 630);
     ctx.globalAlpha = 1;
     ctx.restore();
     canvas.setAttribute("aria-label", t("card_img_title") + ": " + (p.name || t("card_donor")) + ", " + bg);
   }
   function dataUrlToBlob(d) {
-    var parts = d.split(","), bin = atob(parts[1]), arr = new Uint8Array(bin.length);
+    var bin = atob(d.split(",")[1]), arr = new Uint8Array(bin.length);
     for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
     return new Blob([arr], { type: "image/png" });
   }
+  // On phones this opens the share sheet (which has "Save Image"); elsewhere it downloads.
   function saveCard() {
     var canvas = $("card-canvas");
     try {
       drawCard(canvas);
-      var blob = dataUrlToBlob(canvas.toDataURL("image/png"));
-      var fname = "pulumutsa-moyo-donor-card.png", file = null;
+      var blob = dataUrlToBlob(canvas.toDataURL("image/png")), fname = "pulumutsa-moyo-donor-card.png", file = null;
       try { file = new File([blob], fname, { type: "image/png" }); } catch (e) {}
       var coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
       if (file && coarse && navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -500,20 +508,10 @@
     } catch (e) { toast(t("t_card_fail")); }
   }
 
-  function renderNotify() {
-    var btn = $("notify-btn"), label = $("notify-label");
-    if (!("Notification" in window)) { btn.hidden = true; return; }
-    var p;
-    try { p = Notification.permission; } catch (e) { btn.hidden = true; return; }
-    btn.hidden = false;
-    btn.disabled = p !== "default";
-    label.textContent = p === "granted" ? t("notify_on") : p === "denied" ? t("notify_blocked") : t("notify_off");
-  }
+  // ---- Calendar reminder ----
 
-  /* ---------------- Calendar ---------------- */
   function icsEscape(s) { return s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
-  function foldLine(line) {
-    // RFC 5545: lines longer than 75 octets are folded with CRLF + space
+  function foldLine(line) { // ICS lines over 75 bytes get folded
     var out = [], bytes = 0, cur = "";
     for (var i = 0; i < line.length; i++) {
       var ch = line[i], b = unescape(encodeURIComponent(ch)).length;
@@ -528,9 +526,9 @@
     var due = info.due, now = new Date();
     var stamp = now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate()) + "T" + pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + pad(now.getUTCSeconds()) + "Z";
     return [
-      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Pulumutsa Moyo prototype//Blood donation reminder//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Pulumutsa Moyo//Donation reminder//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
       "BEGIN:VEVENT",
-      "UID:znbts-donor-" + compact(due) + "-" + now.getTime() + "@znbts-donor",
+      "UID:pulumutsa-moyo-" + compact(due) + "-" + now.getTime() + "@pulumutsa-moyo",
       "DTSTAMP:" + stamp,
       "DTSTART;VALUE=DATE:" + compact(due),
       "DTEND;VALUE=DATE:" + compact(addDays(due, 1)),
@@ -551,30 +549,28 @@
   }
   function downloadICS() {
     var info = nextInfo(); if (!info) return;
-    if (IS_IOS) {
+    if (IS_IOS) { // Safari opens a calendar file straight into "Add to Calendar"
       try { window.location.href = "data:text/calendar;charset=utf-8," + encodeURIComponent(buildICS(info)); return; } catch (e) {}
     }
     try {
-      var blob = new Blob([buildICS(info)], { type: "text/calendar;charset=utf-8" });
-      var url = URL.createObjectURL(blob);
+      var url = URL.createObjectURL(new Blob([buildICS(info)], { type: "text/calendar;charset=utf-8" }));
       var a = document.createElement("a");
       a.href = url; a.download = "give-blood-reminder.ics";
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
       toast(t("t_ics_ok"));
-    } catch (e) {
-      toast(t("t_ics_fail"));
-    }
+    } catch (e) { toast(t("t_ics_fail")); }
   }
 
-  /* ---------------- Notifications ---------------- */
+  // ---- Browser notification on the due date ----
+
   function checkDue() {
     if (status().kind !== "ready") return;
     try { if (!("Notification" in window) || Notification.permission !== "granted") return; } catch (e) { return; }
     var td = todayISO();
     if (state.lastNotified === td) return;
     try {
-      var opts = { body: t("n_body"), tag: "znbts-due", lang: HTML_LANG[state.lang], icon: (document.querySelector('link[rel="apple-touch-icon"]') || {}).href };
+      var opts = { body: t("n_body"), tag: "pm-due", lang: state.lang, icon: "icons/icon-192.png" };
       if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
         navigator.serviceWorker.getRegistration().then(function (reg) { if (reg) reg.showNotification(t("n_title"), opts); else new Notification(t("n_title"), opts); }).catch(function () {});
       } else new Notification(t("n_title"), opts);
@@ -582,61 +578,52 @@
     } catch (e) {}
   }
 
-  /* ---------------- Map ---------------- */
+  // ---- Map (find page) ----
+
   var map = null, tiles = null, markers = {}, youMarker = null;
-  function isDark() {
-    var th = document.documentElement.getAttribute("data-theme");
-    if (th) return th === "dark";
-    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  }
+  function isDark() { return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches; }
   function tileUrl() { return "https://{s}.basemaps.cartocdn.com/" + (isDark() ? "dark_all" : "light_all") + "/{z}/{x}/{y}{r}.png"; }
   function popupHtml(c) {
-    return "<b>" + esc(c.name) + "</b>" + esc(t("prov_line", { town: c.town, prov: c.province })) + (c.place ? "<br>" + esc(c.place) : "") +
-      (c.phone ? "<br>" + esc(c.phone) : "") +
+    return "<b>" + esc(c.name) + "</b>" + esc(t("prov_line", { town: c.town, prov: c.province })) +
+      (c.place ? "<br>" + esc(c.place) : "") + (c.phone ? "<br>" + esc(c.phone) : "") +
       '<br><a href="' + directionsUrl(c) + '" target="_blank" rel="noopener">' + esc(t("btn_directions")) + "</a>";
   }
   function initMap() {
-    if (map) return;
-    if (typeof L === "undefined") {
-      $("map").innerHTML = '<p style="padding:24px;color:var(--muted)">' + esc(t("map_offline")) + "</p>";
-      return;
-    }
-    map = L.map("map", { zoomControl: true, scrollWheelZoom: false, attributionControl: true, zoomSnap: 0.25 });
+    var box = $("map");
+    if (!box || map || typeof L === "undefined") return; // without Leaflet the drawn map in the page stays
+    box.innerHTML = "";
+    map = L.map(box, { zoomControl: true, scrollWheelZoom: false, zoomSnap: 0.25 });
     map.fitBounds([[-18.1, 21.9], [-8.2, 33.8]], { padding: [10, 10] });
     tiles = L.tileLayer(tileUrl(), {
       subdomains: "abcd", maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }).addTo(map);
     var tileFail = 0;
-    tiles.on("tileerror", function () { if (++tileFail === 1) $("map").classList.add("no-tiles"); });
-    tiles.on("tileload", function () { $("map").classList.remove("no-tiles"); });
-    if (ZAMBIA.length) {
-      var world = [[-85, -179.9], [-85, 179.9], [85, 179.9], [85, -179.9]];
-      L.polygon([world].concat(ZAMBIA), { className: "zm-mask", interactive: false }).addTo(map);
-      L.polygon(ZAMBIA, { className: "zm-outline", interactive: false, fill: false }).addTo(map);
-    }
+    tiles.on("tileerror", function () { if (++tileFail === 1) box.classList.add("no-tiles"); });
+    tiles.on("tileload", function () { box.classList.remove("no-tiles"); });
+    var world = [[-85, -179.9], [-85, 179.9], [85, 179.9], [85, -179.9]];
+    L.polygon([world].concat(ZAMBIA), { className: "zm-mask", interactive: false }).addTo(map);
+    L.polygon(ZAMBIA, { className: "zm-outline", interactive: false, fill: false }).addTo(map);
     CENTRES.forEach(function (c) {
       var m = L.marker([c.lat, c.lng], {
         icon: L.divIcon({ className: "pin", html: '<span class="pin-drop"></span>', iconSize: [28, 34], iconAnchor: [14, 32], popupAnchor: [0, -28] }),
         title: c.name + ", " + c.town, keyboard: true, riseOnHover: true, bubblingMouseEvents: false
       }).addTo(map);
-      m.bindPopup(popupHtml(c));
+      m.bindPopup(popupHtml(c), { autoPanPaddingTopLeft: [60, 24], autoPanPadding: [16, 16] }); // keep clear of the zoom buttons
       m.bindTooltip(c.town, { permanent: true, direction: "right", offset: [12, -16], className: "pin-label", interactive: false });
       m.on("click", function () { highlight(c.id, false); });
       markers[c.id] = m;
     });
     drawYou();
-    var obs = new MutationObserver(function () { if (tiles) tiles.setUrl(tileUrl()); });
-    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     if (window.matchMedia) {
       var mq = window.matchMedia("(prefers-color-scheme: dark)");
       var onChange = function () { if (tiles) tiles.setUrl(tileUrl()); };
       if (mq.addEventListener) mq.addEventListener("change", onChange); else if (mq.addListener) mq.addListener(onChange);
     }
+    setTimeout(function () { map.invalidateSize(); }, 50);
+    setTimeout(function () { map.invalidateSize(); }, 400);
   }
-  function refreshPopups() {
-    Object.keys(markers).forEach(function (id) { markers[id].setPopupContent(popupHtml(centreById(id))); });
-  }
+  function refreshPopups() { Object.keys(markers).forEach(function (id) { markers[id].setPopupContent(popupHtml(centreById(id))); }); }
   function drawYou() {
     if (!map) return;
     var u = userLoc();
@@ -654,63 +641,66 @@
     map.fitBounds(L.latLngBounds([[u.lat, u.lng], [n.lat, n.lng]]).pad(0.6), { maxZoom: 11 });
   }
   function highlight(id, fly) {
-    Array.prototype.forEach.call(document.querySelectorAll(".centre"), function (el) {
-      el.classList.toggle("active", el.getAttribute("data-id") === id);
-    });
-    Object.keys(markers).forEach(function (k) {
-      var el = markers[k].getElement && markers[k].getElement();
-      if (el) el.classList.toggle("active", k === id);
-    });
+    Array.prototype.forEach.call(document.querySelectorAll(".centre"), function (el) { el.classList.toggle("active", el.getAttribute("data-id") === id); });
+    Object.keys(markers).forEach(function (k) { var el = markers[k].getElement && markers[k].getElement(); if (el) el.classList.toggle("active", k === id); });
     var card = document.querySelector('.centre[data-id="' + id + '"]');
     if (card && !fly) { try { card.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) { card.scrollIntoView(false); } }
     if (fly && map && markers[id]) {
       var c = centreById(id);
-      map.flyTo([c.lat, c.lng], 11, { duration: 0.8 });
-      markers[id].openPopup();
+      map.once("moveend", function () { markers[id].openPopup(); });
+      map.flyTo([c.lat, c.lng], c.exact ? 14 : 11, { duration: 0.8 });
       try { $("map").scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch (e) { $("map").scrollIntoView(true); }
     }
   }
 
-  /* ---------------- Render: find ---------------- */
+  function centreItem(row) {
+    var c = row.c;
+    return '<li class="centre" data-id="' + c.id + '">' +
+      '<div class="centre-top"><span class="prov">' + esc(c.province) + (c.hq ? " · " + esc(t("hq")) : "") + "</span>" +
+      (row.km !== null ? '<span class="dist">' + esc(fmtKm(row.km)) + "</span>" : "") + "</div>" +
+      "<h3>" + esc(c.name) + "</h3>" +
+      '<p class="town">' + esc(c.town) + (c.place ? ", " + esc(c.place) : "") + "</p>" + phoneHtml(c) +
+      (c.exact ? "" : '<p class="pin-note">' + esc(t("pin_town")) + "</p>") +
+      '<div class="btn-row"><button class="btn btn-sm" type="button" data-show="' + c.id + '">' + esc(t("show_on_map")) + "</button>" +
+      '<a class="btn btn-sm btn-quiet" href="' + directionsUrl(c) + '" target="_blank" rel="noopener">' + esc(t("btn_directions")) + "</a></div></li>";
+  }
   function renderFind() {
+    var list = $("centre-list");
+    if (!list) return;
+    list.innerHTML = centresByDistance().map(centreItem).join("");
     var u = userLoc();
-    $("centre-list").innerHTML = centresByDistance().map(function (row) {
-      var c = row.c;
-      return '<li class="centre" data-id="' + c.id + '">' +
-        '<div class="centre-top"><span class="prov">' + esc(c.province) + (c.hq ? " · " + esc(t("hq")) : "") + "</span>" +
-        (row.km !== null ? '<span class="dist">' + esc(fmtKm(row.km)) + "</span>" : "") + "</div>" +
-        "<h3>" + esc(c.name) + "</h3>" +
-        '<p class="town">' + esc(c.town) + (c.place ? ", " + esc(c.place) : "") + "</p>" + phoneHtml(c) +
-        '<div class="btn-row"><button class="btn btn-sm" type="button" data-show="' + c.id + '">' + esc(t("show_on_map")) + "</button>" +
-        '<a class="btn btn-sm btn-quiet" href="' + directionsUrl(c) + '" target="_blank" rel="noopener">' + esc(t("btn_directions")) + "</a></div></li>";
-    }).join("");
     $("near").value = state.near && u && u.label === state.near ? state.near : "";
     drawYou();
   }
+
+  // ---- Selects and the log form ----
 
   function setLogType(type) { var r = $("lt-" + (TYPES.indexOf(type) >= 0 ? type : "whole")); if (r) r.checked = true; }
   function logType() { for (var i = 0; i < TYPES.length; i++) if ($("lt-" + TYPES[i]).checked) return TYPES[i]; return "whole"; }
 
   function fillSelects(keep) {
-    var near = $("near"), centre = $("log-centre"), date = $("log-date");
+    var near = $("near");
+    if (near) near.innerHTML = '<option value="">' + esc(t("choose_town")) + "</option>" + TOWNS.map(function (tw) { return '<option value="' + tw[0] + '">' + tw[0] + "</option>"; }).join("");
+    var centre = $("log-centre"), date = $("log-date");
+    if (!centre) return;
     var prevCentre = centre.value, prevDate = date.value;
-    near.innerHTML = '<option value="">' + esc(t("choose_town")) + "</option>" + TOWNS.map(function (tw) { return '<option value="' + tw[0] + '">' + tw[0] + "</option>"; }).join("");
     centre.innerHTML = CENTRES.slice().sort(function (a, b) { return a.town.localeCompare(b.town); })
       .map(function (c) { return '<option value="' + c.id + '">' + esc(c.town) + " · " + esc(c.name) + "</option>"; }).join("") +
       '<option value="mobile">' + esc(t("opt_mobile")) + '</option><option value="other">' + esc(t("opt_other")) + "</option>";
-    var td = todayISO();
-    date.max = td;
+    date.max = todayISO();
     if (keep && prevCentre) { centre.value = prevCentre; date.value = prevDate; }
     else {
       var u = userLoc();
       centre.value = u ? centresByDistance()[0].c.id : "lusaka";
-      date.value = td;
+      date.value = todayISO();
       setLogType(preferredType());
     }
   }
 
   function renderClear() {
-    $("clear-wrap").innerHTML = '<button class="btn btn-sm btn-quiet" type="button" id="clear-btn">' + esc(t("clear")) + "</button>";
+    var wrap = $("clear-wrap");
+    if (!wrap) return;
+    wrap.innerHTML = '<button class="btn btn-sm btn-quiet" type="button" id="clear-btn">' + esc(t("clear")) + "</button>";
     $("clear-btn").addEventListener("click", askClear);
   }
   function askClear() {
@@ -720,19 +710,21 @@
     $("clear-yes").addEventListener("click", function () {
       var lang = state.lang;
       state = defaults(); state.lang = lang; save();
-      fillSelects(false); renderAll(); renderClear(); drawYou();
-      toast(t("t_cleared"));
-      location.hash = "#welcome";
+      flash(t("t_cleared"));
+      location.href = "start.html";
     });
     $("clear-no").addEventListener("click", renderClear);
   }
 
   function renderAll() { renderHome(); renderCard(); renderFind(); }
 
-  /* ---------------- Profile form ---------------- */
+  // ---- Sign-up / profile form (start page) ----
+
   var formBg = "";
   function renderBgChips() {
-    $("p-bg").innerHTML = BLOOD_GROUPS.map(function (b) {
+    var box = $("p-bg");
+    if (!box) return;
+    box.innerHTML = BLOOD_GROUPS.map(function (b) {
       return '<button type="button" aria-pressed="' + (formBg === b) + '" data-bg="' + b + '">' + b + "</button>";
     }).join("") + '<button type="button" class="unknown" aria-pressed="' + (formBg === "unknown") + '" data-bg="unknown">' + esc(t("not_sure")) + "</button>";
   }
@@ -743,6 +735,7 @@
     });
   }
   function renderWelcomeText() {
+    if (!$("profile-form")) return;
     var reg = state.profile.registered;
     $("w-eyebrow").textContent = reg ? t("eyebrow_profile") : t("welcome_eyebrow");
     $("w-title").textContent = reg ? t("prof_edit_title") : t("welcome_title");
@@ -771,11 +764,10 @@
     if (f) { try { f.focus({ preventScroll: false }); } catch (e) { f.focus(); } }
     return false;
   }
-  $("profile-form").addEventListener("submit", function (e) {
+  function submitProfile(e) {
     e.preventDefault();
     $("p-error").hidden = true;
-    var phoneRaw = $("p-phone").value.trim(), emailRaw = $("p-email").value.trim();
-    var phone = "", email = "";
+    var phoneRaw = $("p-phone").value.trim(), emailRaw = $("p-email").value.trim(), phone = "", email = "";
     if (phoneRaw) { phone = normPhone(phoneRaw); if (!phone) return formError("err_phone", "p-phone"); }
     if (emailRaw) { if (!EMAIL_RE.test(emailRaw)) return formError("err_email", "p-email"); email = emailRaw; }
     var sms = $("ch-sms").checked, em = $("ch-email").checked;
@@ -792,79 +784,42 @@
     p.registered = true; p.skipped = false;
     state.lastNotified = "";
     save();
-    if (first) setLogType(preferredType());
-    renderAll();
-    toast(t("t_profile_saved"));
-    location.hash = first ? "#home" : "#remind";
-  });
-  $("p-skip").addEventListener("click", function () {
-    if (state.profile.registered) { location.hash = "#remind"; return; }
-    state.profile.skipped = true; save(); renderAll();
-    location.hash = "#home";
-  });
-  $("profile-form").addEventListener("change", syncChecks);
+    flash(t("t_profile_saved"));
+    location.href = first ? "index.html" : "card.html";
+  }
+  function skipProfile() {
+    if (state.profile.registered) { location.href = "card.html"; return; }
+    state.profile.skipped = true; save();
+    location.href = "index.html";
+  }
 
-  /* ---------------- Language ---------------- */
+  // ---- Language ----
+
   function setLang(lang) {
     if (!I18N[lang]) return;
     state.lang = lang; save();
-    applyStatic(); fillSelects(true); renderAll(); renderClear(); refreshPopups();
-    renderBgChips(); renderWelcomeText();
-    $("log-error").hidden = true; $("p-error").hidden = true;
+    applyStatic(); fillSelects(true); renderAll(); renderClear(); refreshPopups(); renderBgChips(); renderWelcomeText();
+    ["log-error", "p-error"].forEach(function (id) { var el = $(id); if (el) el.hidden = true; });
   }
   function openLangMenu(open) {
     var menu = $("lang-menu"), btn = $("lang-btn");
     menu.hidden = !open;
     btn.setAttribute("aria-expanded", String(open));
-    if (open) {
-      var cur = menu.querySelector('[data-lang="' + state.lang + '"]');
-      if (cur) cur.focus();
-    }
+    if (open) { var cur = menu.querySelector('[data-lang="' + state.lang + '"]'); if (cur) cur.focus(); }
   }
-  $("lang-btn").addEventListener("click", function (e) {
-    e.stopPropagation();
-    openLangMenu($("lang-menu").hidden);
-  });
-  $("lang-menu").addEventListener("click", function (e) {
-    var tg = elOf(e.target);
-    var b = tg ? tg.closest("[data-lang]") : null;
-    if (!b) return;
-    e.stopPropagation();
-    var changed = b.getAttribute("data-lang") !== state.lang;
-    setLang(b.getAttribute("data-lang"));
-    openLangMenu(false);
-    $("lang-btn").focus();
-    if (changed) toast(t("lang_set"));
-  });
-  $("lang-menu").addEventListener("keydown", function (e) {
-    var items = Array.prototype.slice.call($("lang-menu").querySelectorAll("[data-lang]"));
-    var i = items.indexOf(document.activeElement);
-    if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
-    else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
-  });
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && !$("lang-menu").hidden) { openLangMenu(false); $("lang-btn").focus(); }
-  });
-  function outsideClose(e) {
-    var el = elOf(e.target);
-    if (!$("lang-menu").hidden && !(el && el.closest(".lang"))) openLangMenu(false);
-  }
-  if (window.PointerEvent) document.addEventListener("pointerdown", outsideClose);
-  else { document.addEventListener("touchstart", outsideClose, { passive: true }); document.addEventListener("mousedown", outsideClose); }
 
-  /* ---------------- Actions ---------------- */
+  // ---- Donations ----
+
   function addDonation(date, centre, type) {
-    var td = todayISO();
-    var err = $("log-error");
-    err.hidden = true;
+    var td = todayISO(), err = $("log-error");
+    if (err) err.hidden = true;
     type = TYPES.indexOf(type) >= 0 ? type : "whole";
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) { err.textContent = t("err_date"); err.hidden = false; return false; }
-    if (date > td) { err.textContent = t("err_future"); err.hidden = false; return false; }
-    if (date < "1970-01-01") { err.textContent = t("err_year"); err.hidden = false; return false; }
+    function fail(msg) { if (err) { err.textContent = msg; err.hidden = false; } else toast(msg); return false; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date || "")) return fail(t("err_date"));
+    if (date > td) return fail(t("err_future"));
+    if (date < "1970-01-01") return fail(t("err_year"));
     for (var i = 0; i < state.donations.length; i++) {
-      if (state.donations[i].date === date && state.donations[i].type === type) {
-        err.textContent = t("err_dup", { type: typeName(type, true), date: fmt(date) }); err.hidden = false; return false;
-      }
+      if (state.donations[i].date === date && state.donations[i].type === type) return fail(t("err_dup", { type: typeName(type, true), date: fmt(date) }));
     }
     state.donations.push({ id: "d" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), date: date, centre: centre || "", type: type });
     state.lastNotified = "";
@@ -872,7 +827,6 @@
     toast(t("t_saved", { date: fmt(nextDue()) }));
     return true;
   }
-
   function removeDonation(id) {
     var idx = -1;
     for (var i = 0; i < state.donations.length; i++) if (state.donations[i].id === id) idx = i;
@@ -881,30 +835,27 @@
     save(); renderAll();
     toast(t("t_removed", { date: fmt(removed.date) }), t("t_undo"), function () { state.donations.push(removed); save(); renderAll(); });
   }
+  function setLocation(loc) { state.loc = loc; save(); renderAll(); fitToNearest(); }
 
-  function setLocation(loc) {
-    state.loc = loc; save();
-    renderAll(); fitToNearest();
+  function locate() {
+    var btn = $("locate");
+    if (!navigator.geolocation || window.isSecureContext === false) { toast(t("t_no_geo")); return; }
+    btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      btn.disabled = false;
+      state.near = "";
+      setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: "@you" });
+      toast(t("t_geo_ok"));
+    }, function () {
+      btn.disabled = false;
+      toast(t("t_geo_fail"));
+    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 });
   }
 
-  /* ---------------- Routing ---------------- */
-  var VIEWS = ["welcome", "home", "find", "remind", "info"];
-  function route() {
-    var h = (location.hash || "").replace("#", "");
-    if (VIEWS.indexOf(h) < 0) h = "home";
-    VIEWS.forEach(function (v) { $("view-" + v).hidden = v !== h; });
-    Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (a) {
-      if (a.getAttribute("data-view") === h) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-    });
-    if (h === "welcome") fillProfileForm();
-    if (h === "find") {
-      initMap();
-      if (map) { setTimeout(function () { map.invalidateSize(); }, 30); setTimeout(function () { map.invalidateSize(); }, 400); }
-    }
-    window.scrollTo(0, 0);
-  }
+  // ---- Wiring ----
 
-  /* ---------------- Wire up ---------------- */
+  function on(id, ev, fn) { var el = $(id); if (el) el.addEventListener(ev, fn); }
+
   document.addEventListener("click", function (e) {
     var el = elOf(e.target);
     if (!el) return;
@@ -919,10 +870,7 @@
     var rm = el.closest("[data-remove]");
     if (rm) { removeDonation(rm.getAttribute("data-remove")); return; }
     var bg = el.closest("[data-bg]");
-    if (bg) {
-      var v = bg.getAttribute("data-bg");
-      formBg = formBg === v ? "" : v; renderBgChips(); return;
-    }
+    if (bg) { var v = bg.getAttribute("data-bg"); formBg = formBg === v ? "" : v; renderBgChips(); return; }
     var act = el.closest("[data-act]");
     if (act && act.getAttribute("data-act") === "today") {
       var u = userLoc();
@@ -930,21 +878,48 @@
     }
   });
 
-  $("log-form").addEventListener("submit", function (e) {
-    e.preventDefault();
-    addDonation($("log-date").value, $("log-centre").value, logType());
+  on("lang-btn", "click", function (e) { e.stopPropagation(); openLangMenu($("lang-menu").hidden); });
+  on("lang-menu", "click", function (e) {
+    var tg = elOf(e.target), b = tg ? tg.closest("[data-lang]") : null;
+    if (!b) return;
+    e.stopPropagation();
+    var changed = b.getAttribute("data-lang") !== state.lang;
+    setLang(b.getAttribute("data-lang"));
+    openLangMenu(false);
+    $("lang-btn").focus();
+    if (changed) toast(t("lang_set"));
   });
-  $("today-btn").addEventListener("click", function () {
-    $("log-date").value = todayISO();
-    addDonation(todayISO(), $("log-centre").value, logType());
+  on("lang-menu", "keydown", function (e) {
+    var items = Array.prototype.slice.call($("lang-menu").querySelectorAll("[data-lang]")), i = items.indexOf(document.activeElement);
+    if (e.key === "ArrowDown") { e.preventDefault(); items[(i + 1) % items.length].focus(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); items[(i - 1 + items.length) % items.length].focus(); }
   });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && $("lang-menu") && !$("lang-menu").hidden) { openLangMenu(false); $("lang-btn").focus(); }
+  });
+  // iPhone Safari doesn't send "click" for taps on empty space, so listen for pointerdown.
+  function outsideClose(e) {
+    var el = elOf(e.target);
+    if ($("lang-menu") && !$("lang-menu").hidden && !(el && el.closest(".lang"))) openLangMenu(false);
+  }
+  if (window.PointerEvent) document.addEventListener("pointerdown", outsideClose);
+  else { document.addEventListener("touchstart", outsideClose, { passive: true }); document.addEventListener("mousedown", outsideClose); }
 
-  $("ics-btn").addEventListener("click", downloadICS);
-  $("copy-btn").addEventListener("click", copyLink);
-  $("card-save").addEventListener("click", saveCard);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawCardSoon);
-
-  $("notify-btn").addEventListener("click", function () {
+  on("profile-form", "submit", submitProfile);
+  on("profile-form", "change", syncChecks);
+  on("p-skip", "click", skipProfile);
+  on("log-form", "submit", function (e) { e.preventDefault(); addDonation($("log-date").value, $("log-centre").value, logType()); });
+  on("today-btn", "click", function () { $("log-date").value = todayISO(); addDonation(todayISO(), $("log-centre").value, logType()); });
+  on("ics-btn", "click", downloadICS);
+  on("card-save", "click", saveCard);
+  on("copy-btn", "click", copyLink);
+  on("locate", "click", locate);
+  on("near", "change", function (e) {
+    var name = e.target.value;
+    if (!name) { state.near = ""; setLocation(null); return; }
+    for (var i = 0; i < TOWNS.length; i++) if (TOWNS[i][0] === name) { state.near = name; setLocation({ lat: TOWNS[i][1], lng: TOWNS[i][2], label: name }); }
+  });
+  on("notify-btn", "click", function () {
     if (!("Notification" in window)) return;
     try {
       var p = Notification.requestPermission(function () { renderNotify(); checkDue(); });
@@ -957,48 +932,29 @@
     } catch (e) { toast(t("t_notify_none")); }
   });
 
-  $("near").addEventListener("change", function (e) {
-    var name = e.target.value;
-    if (!name) { state.near = ""; setLocation(null); return; }
-    for (var i = 0; i < TOWNS.length; i++) if (TOWNS[i][0] === name) {
-      state.near = name;
-      setLocation({ lat: TOWNS[i][1], lng: TOWNS[i][2], label: name });
-    }
-  });
-
-  $("locate").addEventListener("click", function () {
-    var btn = $("locate");
-    if (!navigator.geolocation || window.isSecureContext === false) { toast(t("t_no_geo")); return; }
-    btn.disabled = true;
-    navigator.geolocation.getCurrentPosition(function (pos) {
-      btn.disabled = false;
-      state.near = "";
-      setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude, label: "@you" });
-      toast(t("t_geo_ok"));
-    }, function () {
-      btn.disabled = false;
-      toast(t("t_geo_fail"));
-    }, { enableHighAccuracy: false, timeout: 12000, maximumAge: 600000 });
-  });
-
-  window.addEventListener("hashchange", route);
   window.addEventListener("orientationchange", function () { if (map) setTimeout(function () { map.invalidateSize(); }, 300); });
-  window.addEventListener("pageshow", function (e) { if (e.persisted) renderAll(); });
+  window.addEventListener("pageshow", function (e) { if (e.persisted) { state = load(); applyStatic(); renderAll(); } });
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { renderAll(); checkDue(); } });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(drawCardSoon);
 
-  // First visit: open the sign-up screen before anything else.
-  if (!state.profile.registered && !state.profile.skipped && (!location.hash || location.hash === "#home")) {
-    try { history.replaceState(null, "", "#welcome"); } catch (e) { location.hash = "#welcome"; }
+  // ---- Start ----
+
+  if (PAGE === "home") {
+    // Links from before the app had separate pages used #find, #remind and so on.
+    var OLD = { "#find": "find.html", "#remind": "card.html", "#info": "info.html", "#welcome": "start.html" };
+    if (OLD[location.hash]) { location.replace(OLD[location.hash]); return; }
+    // First visit: ask for language and details before anything else.
+    if (!state.profile.registered && !state.profile.skipped) { location.replace("start.html"); return; }
   }
 
   applyStatic();
   fillSelects(false);
+  if (PAGE === "start") fillProfileForm();
   renderAll();
   renderClear();
-  route();
+  initMap();
   checkDue();
-  setInterval(function () { renderHome(); checkDue(); }, 60 * 60 * 1000);
-
-  // Exposed for testing only
-  window.__znbts = { drawCard: drawCard, addMonths: addMonths, addDays: addDays, normPhone: normPhone, buildICS: buildICS, nextInfo: nextInfo, status: status, setLang: setLang, I18N: I18N, RULES: RULES, state: function () { return state; } };
+  var msg = takeFlash();
+  if (msg) toast(msg);
+  if (PAGE === "home") setInterval(function () { renderHome(); checkDue(); }, 60 * 60 * 1000);
 })();

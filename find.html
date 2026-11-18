@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Find a centre · Pulumutsa Moyo</title>
+<meta name="description" content="Map of ZNBTS blood centres in all ten provinces, sorted by distance from you.">
+<meta name="theme-color" content="#B0142F">
+<meta name="format-detection" content="telephone=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pulumutsa Moyo">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,600..900&family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/leaflet.css">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="find">
+<noscript><div class="noscript">Pulumutsa Moyo needs JavaScript for the map, reminders and donor card. Turn it on in your browser settings.</div></noscript>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html" aria-label="Pulumutsa Moyo">
+      <svg class="brand-mark" viewBox="0 0 30 36" aria-hidden="true">
+        <path d="M15 1.5C15 1.5 3 15.2 3 23.2A12 12 0 0 0 27 23.2C27 15.2 15 1.5 15 1.5Z" fill="var(--accent)"/>
+        <path d="M15 17v12M9 23h12" stroke="var(--on-accent)" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <span class="brand-text"><b>Pulumutsa Moyo</b><small data-i18n="brand_sub">Blood donor app · independent prototype, not official ZNBTS</small></span>
+    </a>
+    <nav class="tabs" aria-label="Main">
+      <a href="index.html" data-i18n="nav_home">Home</a>
+      <a href="find.html" aria-current="page" data-i18n="nav_find">Find a centre</a>
+      <a href="card.html" data-i18n="nav_remind">Donor card</a>
+      <a href="info.html" data-i18n="nav_info">Before you donate</a>
+    </nav>
+    <div class="lang">
+      <button class="lang-btn" id="lang-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="lang-menu" data-i18n-aria="lang_label" aria-label="Language">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/></svg>
+        <span id="lang-code">EN</span>
+      </button>
+      <div class="lang-menu" id="lang-menu" role="menu" aria-labelledby="lang-btn" hidden>
+        <p class="eyebrow lang-title" data-i18n="lang_label">Language</p>
+        <button type="button" role="menuitemradio" aria-checked="true" data-lang="en" lang="en">
+          <span>English</span><small>English</small>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-lang="bem" lang="bem">
+          <span>Icibemba</span><small>Bemba</small>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </button>
+        <button type="button" role="menuitemradio" aria-checked="false" data-lang="ny" lang="ny">
+          <span>Chinyanja</span><small>Nyanja</small>
+          <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<div class="view">
+<div class="find-head">
+  <h1 data-i18n="find_title">Find a blood centre</h1>
+  <p data-i18n="find_intro">ZNBTS has a blood centre in every province. In Lusaka it's at UTH on Nationalist Road. Pick your town, or use your location, to see the closest one first.</p>
+  <div class="find-controls">
+    <button class="btn btn-primary" id="locate" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+      <span data-i18n="btn_locate">Use my location</span>
+    </button>
+    <span class="or" data-i18n="or">or</span>
+    <select class="input" id="near" data-i18n-aria="choose_town" aria-label="Choose your town"><option value="">Choose your town</option><option value="Chililabombwe">Chililabombwe</option><option value="Chingola">Chingola</option><option value="Chinsali">Chinsali</option><option value="Chipata">Chipata</option><option value="Choma">Choma</option><option value="Chongwe">Chongwe</option><option value="Isoka">Isoka</option><option value="Kabwe">Kabwe</option><option value="Kafue">Kafue</option><option value="Kalomo">Kalomo</option><option value="Kalulushi">Kalulushi</option><option value="Kaoma">Kaoma</option><option value="Kapiri Mposhi">Kapiri Mposhi</option><option value="Kasama">Kasama</option><option value="Katete">Katete</option><option value="Kitwe">Kitwe</option><option value="Livingstone">Livingstone</option><option value="Luanshya">Luanshya</option><option value="Lusaka">Lusaka</option><option value="Mansa">Mansa</option><option value="Mazabuka">Mazabuka</option><option value="Mbala">Mbala</option><option value="Mongu">Mongu</option><option value="Monze">Monze</option><option value="Mpika">Mpika</option><option value="Mufulira">Mufulira</option><option value="Mumbwa">Mumbwa</option><option value="Nakonde">Nakonde</option><option value="Ndola">Ndola</option><option value="Petauke">Petauke</option><option value="Senanga">Senanga</option><option value="Siavonga">Siavonga</option><option value="Solwezi">Solwezi</option></select>
+  </div>
+</div>
+
+<div class="find-grid">
+  <div id="map" class="map" role="region" data-i18n-aria="map_aria" aria-label="Map of ZNBTS blood centres"><svg class="static-map" viewBox="-20 -20 640 553" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Map of ZNBTS blood centres"><path class="land" d="M428.4 385.5 L421.0 385.5 L408.1 385.5 L394.8 385.5 L382.5 388.2 L372.5 392.3 L360.5 398.8 L356.5 401.4 L353.6 403.3 L351.6 405.9 L350.7 411.3 L350.7 419.8 L349.6 425.9 L345.8 431.4 L327.7 438.3 L315.9 443.8 L304.1 450.4 L295.4 458.9 L289.2 469.3 L279.2 482.3 L269.0 493.5 L258.2 505.4 L246.0 509.7 L235.8 508.7 L223.5 503.9 L213.7 502.9 L206.6 506.0 L199.9 505.0 L193.7 500.2 L188.6 498.5 L184.4 499.7 L179.0 499.5 L169.4 496.8 L160.8 488.6 L156.3 485.2 L152.9 483.9 L142.9 482.5 L119.6 480.6 L117.3 481.1 L107.7 482.7 L95.7 484.8 L85.5 486.8 L74.6 488.9 L64.6 480.3 L53.2 470.6 L41.4 459.6 L32.5 451.1 L28.2 446.1 L20.4 439.6 L14.7 436.5 L12.6 434.9 L7.1 417.5 L4.0 401.6 L4.0 389.7 L4.0 373.0 L4.0 356.4 L4.0 339.8 L4.0 323.2 L4.0 306.6 L4.0 290.0 L4.0 273.3 L4.0 256.7 L4.0 248.6 L15.6 248.6 L28.7 248.6 L42.5 248.6 L57.6 248.6 L72.5 248.6 L87.5 248.6 L98.1 248.6 L100.8 248.5 L104.1 248.0 L104.2 246.4 L99.9 238.2 L100.2 235.3 L101.3 229.7 L103.2 225.0 L105.5 218.7 L105.7 215.0 L103.9 202.9 L104.1 196.2 L104.6 189.2 L105.1 182.5 L104.4 177.9 L105.1 175.4 L106.6 171.8 L107.3 167.8 L108.2 166.0 L108.1 164.4 L107.1 161.4 L106.4 154.5 L105.3 145.1 L104.2 138.4 L106.0 138.7 L109.9 139.4 L111.7 142.7 L112.7 146.4 L115.3 146.6 L122.0 148.7 L124.4 151.8 L125.8 158.3 L124.9 161.6 L122.7 164.3 L124.9 166.6 L129.5 168.2 L132.0 167.7 L139.6 163.3 L142.5 162.5 L146.5 161.7 L150.2 160.5 L160.1 158.5 L165.6 157.6 L168.7 156.0 L170.8 156.0 L172.5 157.3 L171.0 161.8 L170.5 166.0 L172.5 173.7 L173.9 177.3 L177.2 179.9 L179.5 181.3 L182.1 184.1 L187.6 183.5 L199.4 187.5 L203.0 189.3 L208.0 191.2 L211.5 191.8 L223.9 193.1 L228.4 194.1 L236.7 195.4 L243.4 195.6 L248.4 195.0 L251.6 193.8 L253.6 192.6 L254.5 191.6 L256.0 187.7 L258.5 179.4 L259.4 177.0 L262.0 175.8 L265.2 175.0 L267.0 176.3 L269.2 185.6 L278.5 193.9 L281.7 200.9 L284.1 206.9 L286.1 208.6 L289.6 210.6 L295.4 211.4 L300.5 211.6 L311.0 215.9 L319.5 219.3 L325.7 221.7 L328.4 223.6 L330.4 226.7 L331.5 229.1 L333.3 235.2 L335.3 240.0 L338.6 241.0 L341.4 241.4 L344.4 244.8 L346.5 247.6 L350.9 254.8 L354.0 259.7 L355.1 264.5 L358.7 267.6 L363.6 269.0 L368.2 269.2 L370.7 267.7 L377.2 265.3 L382.3 262.5 L385.9 261.5 L388.1 262.1 L389.7 264.1 L390.7 268.0 L390.9 270.1 L394.5 272.0 L397.0 271.3 L398.1 268.9 L398.1 267.7 L398.1 257.2 L398.1 248.2 L398.1 239.6 L398.1 229.2 L398.1 220.1 L398.1 212.6 L398.1 204.8 L395.7 205.3 L392.8 207.1 L386.1 207.3 L383.6 208.6 L382.8 210.7 L383.2 213.3 L383.4 216.8 L382.5 218.5 L379.6 219.1 L375.2 217.8 L367.6 216.0 L361.3 214.9 L356.7 210.1 L350.4 203.0 L346.4 199.4 L336.6 192.0 L334.9 190.5 L331.9 187.1 L329.3 181.2 L328.0 177.3 L326.9 174.3 L325.5 170.0 L327.8 163.4 L331.3 150.7 L333.7 141.5 L334.9 134.8 L339.8 127.9 L340.2 121.8 L338.2 113.8 L338.7 109.4 L338.9 98.3 L339.3 89.0 L339.3 84.5 L338.0 76.6 L334.7 67.8 L327.7 55.7 L327.7 53.0 L332.0 50.2 L338.6 45.2 L341.8 42.2 L345.8 38.0 L347.6 35.8 L351.4 30.3 L353.8 25.9 L354.7 20.2 L352.9 14.8 L356.5 13.7 L368.9 11.8 L382.3 9.7 L396.7 7.5 L411.0 5.2 L425.0 3.0 L437.5 1.0 L446.2 -0.4 L447.7 3.4 L450.2 9.6 L453.5 14.2 L457.3 18.2 L460.5 20.6 L462.7 21.3 L476.5 21.0 L481.4 23.5 L485.8 26.6 L486.9 31.4 L489.8 34.3 L492.9 36.7 L494.1 37.0 L496.3 36.4 L500.1 36.4 L503.5 37.4 L505.2 38.4 L505.4 42.5 L506.3 44.2 L511.0 44.9 L515.7 45.2 L520.4 48.0 L525.3 48.4 L531.2 49.6 L533.9 52.4 L539.8 55.5 L547.3 58.1 L552.8 61.2 L555.7 62.5 L555.8 64.0 L557.1 66.5 L558.6 68.4 L558.8 71.1 L559.5 73.6 L561.6 74.3 L563.3 74.5 L564.9 72.7 L567.1 72.7 L569.4 73.9 L570.4 76.8 L572.4 80.7 L575.2 83.4 L577.5 86.1 L576.7 90.8 L575.4 95.2 L579.4 99.4 L584.9 103.6 L586.3 105.4 L586.7 111.4 L587.6 113.5 L591.2 118.5 L593.0 121.9 L592.9 123.8 L583.1 133.8 L580.0 134.8 L577.1 135.3 L574.3 137.4 L572.9 139.5 L573.4 140.6 L574.5 144.0 L576.7 149.4 L578.9 153.2 L577.1 157.9 L573.3 165.9 L571.5 166.6 L571.1 172.7 L572.4 174.9 L574.2 176.7 L574.9 180.8 L575.1 186.5 L574.9 191.0 L572.4 202.6 L576.9 212.7 L578.4 213.9 L584.5 213.9 L585.4 214.8 L584.0 217.7 L581.4 220.6 L579.8 222.2 L572.0 225.6 L560.7 229.5 L558.4 233.2 L556.9 238.4 L558.2 241.6 L559.7 243.4 L559.1 248.1 L558.2 252.9 L558.6 256.8 L558.0 260.2 L556.6 261.9 L554.6 267.0 L552.2 272.3 L550.2 274.6 L547.5 277.1 L543.1 279.2 L543.1 280.2 L548.2 282.6 L549.5 284.2 L549.8 285.4 L548.8 286.4 L547.9 288.0 L550.2 289.6 L553.0 290.9 L555.7 294.4 L558.0 299.2 L558.8 300.8 L559.3 301.6 L560.2 301.7 L561.8 300.9 L564.9 298.2 L567.1 297.3 L569.8 301.1 L558.9 304.8 L553.3 306.7 L537.1 312.2 L523.0 317.1 L519.4 318.0 L511.9 320.4 L508.3 321.9 L495.6 326.1 L490.3 328.2 L485.9 330.3 L475.4 333.4 L465.4 336.4 L454.5 339.4 L442.4 342.8 L435.5 345.3 L430.9 347.4 L420.1 351.6 L419.5 352.7 L419.7 355.6 L421.2 361.6 L423.9 367.1 L426.1 370.2 L427.5 378.3 L428.4 385.5Z"/><circle cx="323.4" cy="374.5" r="6"/><text x="333.4" y="378.5" text-anchor="start">Lusaka</text><circle cx="318.2" cy="238.1" r="6"/><text x="328.2" y="242.1" text-anchor="start">Kitwe</text><circle cx="330.1" cy="323.5" r="6"/><text x="340.1" y="327.5" text-anchor="start">Kabwe</text><circle cx="541.7" cy="282.0" r="6"/><text x="531.7" y="286.0" text-anchor="end">Chipata</text><circle cx="352.7" cy="155.4" r="6"/><text x="362.7" y="159.4" text-anchor="start">Mansa</text><circle cx="513.4" cy="121.3" r="6"/><text x="503.4" y="125.3" text-anchor="end">Chinsali</text><circle cx="467.9" cy="104.2" r="6"/><text x="477.9" y="108.2" text-anchor="start">Kasama</text><circle cx="226.4" cy="205.5" r="6"/><text x="236.4" y="209.5" text-anchor="start">Solwezi</text><circle cx="199.4" cy="499.3" r="6"/><text x="209.4" y="503.3" text-anchor="start">Livingstone</text><circle cx="61.9" cy="365.0" r="6"/><text x="71.9" y="369.0" text-anchor="start">Mongu</text></svg></div>
+  <div class="list-wrap">
+    <p class="list-note" data-i18n="list_note">Where we know the building, the pin sits on it. Otherwise it marks the town. Phone ahead before a long trip.</p>
+    <ul class="centre-list" id="centre-list"><li class="centre" data-id="lusaka"><div class="centre-top"><span class="prov">Lusaka · Headquarters</span></div><h3>Lusaka Provincial Blood Transfusion Centre</h3><p class="town">Lusaka, UTH grounds, Nationalist Road</p><p class="phone"><a href="tel:+260211257118">+260 211 257118</a> <small>· ZNBTS head office</small></p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="lusaka">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-15.4321,28.3137" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="kabwe"><div class="centre-top"><span class="prov">Central</span></div><h3>Central Provincial Blood Centre</h3><p class="town">Kabwe, Kabwe General Hospital</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="kabwe">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-14.4469,28.4464" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="kitwe"><div class="centre-top"><span class="prov">Copperbelt</span></div><h3>Copperbelt Provincial Blood Bank</h3><p class="town">Kitwe, Kitwe Teaching Hospital, Kuomboka Drive</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="kitwe">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-12.7978,28.2102" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="chipata"><div class="centre-top"><span class="prov">Eastern</span></div><h3>Eastern Provincial Blood Centre</h3><p class="town">Chipata</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="chipata">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-13.6445,32.6447" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="mansa"><div class="centre-top"><span class="prov">Luapula</span></div><h3>Luapula Provincial Blood Centre</h3><p class="town">Mansa</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="mansa">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-11.1998,28.8943" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="chinsali"><div class="centre-top"><span class="prov">Muchinga</span></div><h3>Muchinga Provincial Blood Centre</h3><p class="town">Chinsali</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="chinsali">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-10.5414,32.0816" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="solwezi"><div class="centre-top"><span class="prov">North-Western</span></div><h3>North-Western Provincial Blood Centre</h3><p class="town">Solwezi</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="solwezi">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-12.1688,26.3894" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="kasama"><div class="centre-top"><span class="prov">Northern</span></div><h3>Northern Provincial Blood Centre</h3><p class="town">Kasama</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="kasama">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-10.2129,31.1808" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="livingstone"><div class="centre-top"><span class="prov">Southern</span></div><h3>Southern Provincial Blood Centre</h3><p class="town">Livingstone</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="livingstone">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-17.8419,25.8543" target="_blank" rel="noopener">Directions</a></div></li><li class="centre" data-id="mongu"><div class="centre-top"><span class="prov">Western</span></div><h3>Western Provincial Blood Centre</h3><p class="town">Mongu</p><p class="pin-note">Pin shows the town</p><div class="btn-row"><button class="btn btn-sm" type="button" data-show="mongu">Show on map</button><a class="btn btn-sm btn-quiet" href="https://www.google.com/maps/dir/?api=1&amp;destination=-15.2484,23.1274" target="_blank" rel="noopener">Directions</a></div></li></ul>
+  </div>
+</div>
+
+<div class="drives">
+  <h2 data-i18n="drives_title">Mobile blood drives</h2>
+  <p data-i18n="drives_text">A study at the Lusaka centre found about 90% of its blood came from mobile drives at schools, colleges and universities. If your school, church or workplace wants a drive, ask your nearest centre.</p>
+  <p><a href="https://www.facebook.com/p/Zambia-National-Blood-Transfusion-Service-100077769844561/" target="_blank" rel="noopener" data-i18n="fb_link">ZNBTS on Facebook</a></p>
+</div>
+
+</div>
+</main>
+
+<nav class="tabbar" aria-label="Main">
+  <a href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s-7 7.6-7 12a7 7 0 0 0 14 0c0-4.4-7-12-7-12z"/></svg>
+    <span data-i18n="tab_home">Home</span>
+  </a>
+  <a href="find.html" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15 12 21 12 21z"/><circle cx="12" cy="10" r="2.3"/></svg>
+    <span data-i18n="tab_find">Find</span>
+  </a>
+  <a href="card.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><circle cx="8.5" cy="11" r="2"/><path d="M5.5 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4M14 13.5h3"/></svg>
+    <span data-i18n="tab_remind">Card</span>
+  </a>
+  <a href="info.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4.5V3h6v1.5M9 11l2 2 4-4M9 17h6"/></svg>
+    <span data-i18n="tab_info">Before</span>
+  </a>
+</nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toast-msg"></span><button type="button" id="toast-action" hidden></button></div>
+
+<script src="js/vendor/leaflet.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
